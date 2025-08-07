@@ -14,22 +14,25 @@ import { useFetchDashboardCounts } from "../queries/dashboardQuery";
 import { appRoutes } from "@/routes/appRoutes";
 import { DateInput } from "@/components/common/Input";
 import { getTodayDate } from "@/utils/commonUtils";
+import { useState } from "react";
 
 const DashBoardPage = () => {
   const navigate = useNavigate();
-  const { data: count, isLoading: countLoading } = useFetchDashboardCounts();
+  const [selectedDate, setSelectedDate] = useState(getTodayDate());
+  
+  const {
+    data: count,
+    isLoading: countLoading,
+    isError: countError,
+  } = useFetchDashboardCounts();
+  
   const { role, engineer } = useAuthStore();
 
-  const { data, isLoading, isError } = useFetchServiceRequestsForEngineers(
-    engineer?.id,
-  );
+  const { data, isLoading, isError } = useFetchServiceRequestsForEngineers(engineer?.id);
 
-  if (isLoading) {
+  // Only show skeleton when both are loading initially
+  if (countLoading) {
     return <ServiceRequestSkeleton />;
-  }
-
-  if (isError) {
-    return <div className="p-4 text-red-500">Failed to load data.</div>;
   }
 
   const stats = [
@@ -74,7 +77,7 @@ const DashBoardPage = () => {
     },
     {
       title: "Assigned Engineers",
-      value: count?.assignedEngineers ?? "3",
+      value: count?.assignedEngineers ?? "0",
       textColor: "text-green-500",
       borderColor: "border-green-500",
       icon: UserCheck,
@@ -83,7 +86,7 @@ const DashBoardPage = () => {
     },
     {
       title: "Available Engineers",
-      value: count?.availableEngineers ?? "4",
+      value: count?.availableEngineers ?? "0",
       textColor: "text-purple-500",
       borderColor: "border-purple-500",
       icon: Users,
@@ -95,7 +98,7 @@ const DashBoardPage = () => {
   const serviceStats = [
     {
       title: "Total Service Calls",
-      value: count?.availableEngineers ?? "0",
+      value: count?.servicePending ?? "0",
       textColor: "text-indigo-500",
       borderColor: "border-indigo-500",
       icon: Wrench,
@@ -118,7 +121,7 @@ const DashBoardPage = () => {
       borderColor: "border-gray-500",
       icon: AlertTriangle,
       iconBg: "bg-gray-50",
-      navigateUrl: "",
+      navigateUrl:"",
     },
   ];
 
@@ -156,6 +159,7 @@ const DashBoardPage = () => {
             })}
           </section>
         )}
+
         {role === "SERVICE" && (
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {serviceStats.map((item, index) => {
@@ -199,19 +203,42 @@ const DashBoardPage = () => {
                 </div>
 
                 <div className="flex w-full items-center justify-end gap-3">
-                  <div className="justidy-end flex max-w-[350px]">
+                  <div className="justify-end flex max-w-[350px]">
                     <DateInput
                       title=""
-                      value=""
-                      onChange={() => {}}
+                      value={selectedDate}
+                      onChange={setSelectedDate}
                       name="serviceDate"
                     />
                   </div>
                 </div>
               </div>
+
+              {/* Service request rendering with proper loading and error handling */}
               <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-6">
-                  {data?.map((request) => (
+                {isLoading ? (
+                  <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700 border border-blue-300">
+                    Loading service requests...
+                  </div>
+                ) : isError || (!data || (Array.isArray(data) && data.length === 0)) ? (
+                  <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-6 text-center shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 text-yellow-400"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.947a1 1 0 00.95.69h4.15c.969 0 1.371 1.24.588 1.81l-3.36 2.444a1 1 0 00-.364 1.118l1.287 3.947c.3.921-.755 1.688-1.538 1.118l-3.36-2.444a1 1 0 00-1.175 0l-3.36 2.444c-.783.57-1.838-.197-1.538-1.118l1.287-3.947a1 1 0 00-.364-1.118L2.075 9.374c-.783-.57-.38-1.81.588-1.81h4.15a1 1 0 00.95-.69l1.286-3.947z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-gray-700">
+                      No work today!
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      You don't have any assigned service requests today. Enjoy your free time 😊
+                    </p>
+                  </div>
+                ) : (
+                  data.map((request) => (
                     <div
                       key={request.id}
                       className="rounded-2xl border border-slate-300 bg-white p-3 transition-all duration-300"
@@ -239,26 +266,26 @@ const DashBoardPage = () => {
                               </span>
                               <span className="text-sm text-gray-600">
                                 <span className="font-medium">Serial No:</span>{" "}
-                                {request.brand} {request.serialNumber}
+                                {request.serialNumber}
                               </span>
                             </section>
                           </div>
                           <footer className="flex h-min flex-col gap-3 md:flex-row">
                             <ButtonSm
                               className="font-medium text-white"
-                              text={"View"}
+                              text="View"
                               state="default"
-                              type="submit"
+                              type="button"
                               onClick={() =>
                                 navigate(
-                                  `/transactions/service-entry/create/${request.id}?mode=create`,
+                                  `/transactions/service-entry/create/${request.id}?mode=create`
                                 )
                               }
                             />
                           </footer>
                         </div>
 
-                        {/* complaint details */}
+                        {/* Complaint details */}
                         {request.complaintDetails && (
                           <section className="mt-3 rounded-lg border-l-4 border-orange-400 bg-slate-100 p-3">
                             <p className="text-sm font-medium text-gray-700">
@@ -271,8 +298,8 @@ const DashBoardPage = () => {
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
             </div>
           </section>

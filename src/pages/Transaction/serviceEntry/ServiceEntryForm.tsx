@@ -43,7 +43,9 @@ const getCurrentDate = () => {
 };
 
 const RequestEntry = () => {
-  const { engineer, role } = useAuthStore();
+    const { role  , engineer} = useAuthStore();
+
+  
   const emptyData: ServiceEntryPayload = {
     refNumber: "",
     serviceDate: getCurrentDate(),
@@ -51,7 +53,7 @@ const RequestEntry = () => {
     maintenanceSubType: "",
     serviceRequestId: 0,
     vendorId: 0,
-    engineerId: engineer?.id || 0,
+    engineerId: role === "SERVICE" ? (engineer?.id || 0) : 0,
     engineerDiagnostics: "",
     serviceStatus: "",
     remarks: "",
@@ -505,19 +507,32 @@ const RequestEntry = () => {
           }
           onChange={(val) => setFormData({ ...formData, vendorId: val.id })}
         />
-        <DropdownSelect
-          required
-          title="Engineer Name"
-          disabled={role === "Engineer"}
-          options={engineerOptions}
-          selected={
-            engineerOptions.find((opt) => opt.id === formData.engineerId) || {
-              id: 0,
-              label: "Select Engineer",
-            }
-          }
-          onChange={(val) => setFormData({ ...formData, engineerId: val.id })}
-        />
+{role === "ADMIN" ? (
+  <DropdownSelect
+    required
+    title="Engineer Name"
+    disabled={formState === "display"}
+    options={engineerOptions}
+    selected={
+      engineerOptions.find((opt) => opt.id === formData.engineerId) || {
+        id: 0,
+        label: "Select Engineer",
+      }
+    }
+    onChange={(val) => setFormData({ ...formData, engineerId: val.id })}
+  />
+) : (
+  <Input
+    required
+    disabled
+    className="w-full"
+    title="Engineer Name"
+    inputValue={engineer?.name ?? ""}
+    onChange={() => {}}
+  />
+)}
+
+
         <DropdownSelect
           title="Machine Brand"
           options={[]}
