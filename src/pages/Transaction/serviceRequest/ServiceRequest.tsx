@@ -41,6 +41,10 @@ const ServiceRequestPage = () => {
     selectedFilter,
   );
 
+    const isStatusCompleted = (status: string) => {
+    return status === "Completed" || status === "COMPLETED";
+  };
+
   useEffect(() => {
     if (selectedFilter) {
       refetch();
@@ -238,24 +242,33 @@ const ServiceRequestPage = () => {
                         {item.complaintDetails}
                       </p>
                     </div>
-                    <div className="w-24 min-w-24 px-2 pt-1 md:w-28 md:min-w-28">
-                      <ButtonSm
-                        className="min-w-full scale-90 border-1 border-blue-500 bg-blue-500/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFormState("edit");
-                          setIsFormOpen(true);
-                          setSelectedRequest(item);
-                        }}
-                        text={item.engineerName || "Assign"}
-                        imgUrl={
-                          item.engineerName
-                            ? "/icons/edit-icon.svg"
-                            : "/icons/add-user-icon.svg"
-                        }
-                        state="outline"
-                      />
-                    </div>
+                  <div className="w-24 min-w-24 px-2 pt-1 md:w-28 md:min-w-28">
+                       {isStatusCompleted(item?.status || "") ? (
+  <div className="min-w-full scale-90 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 px-3 py-2">
+    <span className="text-xs font-medium text-gray-500">
+      {item.engineerName || "Completed"}
+    </span>
+  </div>
+) : (
+  <ButtonSm
+    className="min-w-full scale-90 border-1 border-blue-500 bg-blue-500/10"
+    onClick={(e) => {
+      e.stopPropagation();
+      setFormState("edit");
+      setIsFormOpen(true);
+      setSelectedRequest(item);
+    }}
+    text={item.engineerName || "Assign"}
+    imgUrl={
+      item.engineerName
+        ? "/icons/edit-icon.svg"
+        : "/icons/add-user-icon.svg"
+    }
+    state="outline"
+  />
+)}
+
+                      </div>
                     <div className="w-20 min-w-24 px-2 md:w-24 md:min-w-24">
                       <span
                         className={`inline-flex min-w-full items-center justify-center rounded-full px-2 py-1 text-xs font-medium ${
