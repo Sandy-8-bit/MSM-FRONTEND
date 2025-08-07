@@ -7,14 +7,14 @@ export const UsersPage = () => {
 
   const userConfigCards = [
     {
-      img: "icons/Master/Vendor.svg", // Make sure the image exists or replace it
+      img: "icons/Master/create-user.svg", // Make sure the image exists or replace it
       title: "Create User",
       desc: "Add new users to the system and define their basic details of the user.",
       btnText: "Create",
       onAction: () => {}, // Update this path as per your routing
     },
     {
-      img: "icons/Master/Clients.svg", // Make sure the image exists or replace it
+      img: "icons/Master/assign-role.svg", // Make sure the image exists or replace it
       title: "Assign Role",
       desc: "Assign roles and permissions to users to control access across the app.",
       btnText: "Assign",

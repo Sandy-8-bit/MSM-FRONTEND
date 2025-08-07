@@ -17,14 +17,12 @@ import { getTodayDate } from "@/utils/commonUtils";
 
 const DashBoardPage = () => {
   const navigate = useNavigate();
-  const {
-    data: count,
-    isLoading: countLoading,
-    isError: countError,
-  } = useFetchDashboardCounts();
-  const { role  , engineer} = useAuthStore();
+  const { data: count, isLoading: countLoading } = useFetchDashboardCounts();
+  const { role, engineer } = useAuthStore();
 
-  const { data, isLoading, isError } = useFetchServiceRequestsForEngineers(engineer?.id);
+  const { data, isLoading, isError } = useFetchServiceRequestsForEngineers(
+    engineer?.id,
+  );
 
   if (isLoading) {
     return <ServiceRequestSkeleton />;
@@ -111,7 +109,7 @@ const DashBoardPage = () => {
       borderColor: "border-blue-500",
       icon: CheckCircle,
       iconBg: "bg-blue-50",
-      navigateUrl:"",
+      navigateUrl: "",
     },
     {
       title: "Service Pending",
@@ -120,25 +118,23 @@ const DashBoardPage = () => {
       borderColor: "border-gray-500",
       icon: AlertTriangle,
       iconBg: "bg-gray-50",
-      navigateUrl:"",
+      navigateUrl: "",
     },
   ];
-
-
 
   return (
     <div className="mx-auto max-w-[1390px] self-center rounded-[24px] bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-4 shadow-sm">
       <div className="flex flex-col gap-2">
         {/* Show stats only if role is admin */}
         {role === "ADMIN" && (
-          <section className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+          <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3">
             {stats.map((item, index) => {
               const IconComponent = item.icon;
               return (
                 <div
                   key={index}
                   onClick={() => item.navigateUrl && navigate(item.navigateUrl)}
-                  className={`group relative flex transform cursor-pointer flex-row items-center justify-between overflow-hidden rounded-2xl border-2 border-slate-300 bg-white p-6 transition-all duration-300 hover:scale-[1.02] active:scale-105`}
+                  className={`group nd:p-4 relative flex transform cursor-pointer flex-row items-center justify-between overflow-hidden rounded-2xl border-2 border-slate-300 bg-white p-3 transition-all duration-300 hover:scale-[1.02] active:scale-105 lg:p-6`}
                 >
                   <div className="flex flex-col items-start justify-start gap-3">
                     <h3 className="text-lg leading-tight font-medium text-gray-700">
@@ -151,7 +147,7 @@ const DashBoardPage = () => {
                     </h4>
                   </div>
                   <div
-                    className={`hidden rounded-xl p-3 md:flex ${item.iconBg} ${item.borderColor} border-2 transition-transform duration-300 group-hover:scale-110`}
+                    className={`origin-top-right scale-75 rounded-xl p-3 md:flex md:scale-100 ${item.iconBg} ${item.borderColor} border-2 transition-transform duration-300 group-hover:scale-110`}
                   >
                     <IconComponent className={`h-6 w-6 ${item.textColor}`} />
                   </div>

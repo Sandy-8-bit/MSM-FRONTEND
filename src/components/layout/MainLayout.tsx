@@ -13,7 +13,7 @@ const MainLayout: React.FC = () => {
         <TopNav />
         <BottomNav />
         {/* Content */}
-        <main className="align-center flex-1 overflow-y-auto bg-zinc-50 bg-gradient-to-b from-white/0 to-blue-500/50 p-3 pb-24 md:pb-0 lg:p-4">
+        <main className="align-center main-content flex-1 overflow-y-auto bg-zinc-50 bg-gradient-to-b from-white/0 to-blue-500/50 p-3 pb-24 md:pb-0 lg:p-4">
           {/*This is where the nested routes will be rendered which will be given my router dom from app.tsx  */}
           <Outlet />
         </main>
