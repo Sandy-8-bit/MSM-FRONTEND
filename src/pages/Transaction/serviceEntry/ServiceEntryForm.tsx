@@ -37,15 +37,15 @@ interface SparePartData {
   complaintSparePhotoUrl?: File;
   sparePhotoUrl?: File;
 }
+
 const getCurrentDate = () => {
   const today = new Date();
   return today.toISOString().split("T")[0];
 };
 
 const RequestEntry = () => {
-    const { role  , engineer} = useAuthStore();
+  const { role, engineer } = useAuthStore();
 
-  
   const emptyData: ServiceEntryPayload = {
     refNumber: "",
     serviceDate: getCurrentDate(),
@@ -123,19 +123,14 @@ const RequestEntry = () => {
   }
 
   const handleQRScan = (data: string) => {
-    // console.log("Raw QR data:", data); // Debug log
-
     try {
       let scannedData: MachineDetails = {};
 
       // Try to parse as JSON first
       try {
         scannedData = JSON.parse(data);
-        // console.log("Parsed as JSON:", scannedData);
       } catch (parseError) {
         // Parse the custom text format
-        // console.log("Parsing as custom text format");
-
         const lines = data.split("\n");
 
         for (const line of lines) {
@@ -155,8 +150,6 @@ const RequestEntry = () => {
             scannedData.brand = trimmedLine.split("Brand:")[1]?.trim();
           }
         }
-
-        // console.log("Parsed QR data:", scannedData);
       }
 
       // Check if required fields exist
@@ -175,12 +168,6 @@ const RequestEntry = () => {
         return;
       }
 
-      // console.log("Service request data:", {
-      //   clientName: serviceRequestData?.clientName,
-      //   machineType: serviceRequestData?.machineType,
-      //   serialNumber: serviceRequestData?.serialNumber
-      // });
-
       // Verify if scanned data matches service request data (case-insensitive comparison)
       const clientNameMatch =
         scannedData.clientName?.toLowerCase().trim() ===
@@ -192,38 +179,11 @@ const RequestEntry = () => {
         scannedData.serialNumber?.toLowerCase().trim() ===
         serviceRequestData?.serialNumber?.toLowerCase().trim();
 
-      // console.log("Comparison results:", {
-      //   clientNameMatch,
-      //   machineTypeMatch,
-      //   serialNumberMatch,
-      //   scannedClientName: scannedData.clientName,
-      //   expectedClientName: serviceRequestData?.clientName,
-      //   scannedMachineType: scannedData.machineType,
-      //   expectedMachineType: serviceRequestData?.machineType,
-      //   scannedSerialNumber: scannedData.serialNumber,
-      //   expectedSerialNumber: serviceRequestData?.serialNumber
-      // });
-
       if (clientNameMatch && machineTypeMatch && serialNumberMatch) {
         setIsVerified(true);
         setQrError("");
         toast.success("QR code verified successfully!");
       } else {
-        // Provide specific feedback about which fields don't match
-        const mismatches = [];
-        if (!clientNameMatch)
-          mismatches.push(
-            `Client Name (Expected: "${serviceRequestData?.clientName}", Got: "${scannedData.clientName}")`,
-          );
-        if (!machineTypeMatch)
-          mismatches.push(
-            `Machine Type (Expected: "${serviceRequestData?.machineType}", Got: "${scannedData.machineType}")`,
-          );
-        if (!serialNumberMatch)
-          mismatches.push(
-            `Serial Number (Expected: "${serviceRequestData?.serialNumber}", Got: "${scannedData.serialNumber}")`,
-          );
-
         setQrError(`QR code data does not match`);
       }
     } catch (error) {
@@ -243,6 +203,34 @@ const RequestEntry = () => {
       }));
     }
   }, [serviceRequestData]);
+
+  // Handle maintenance type change and automatically set sub type
+  const handleMaintenanceTypeChange = (selectedOption: DropdownOption) => {
+    const maintenanceType = selectedOption.label;
+    let maintenanceSubType = "";
+
+    // Set the appropriate sub type based on maintenance type
+    switch (maintenanceType) {
+      case "General":
+        maintenanceSubType = "Thugil Scope";
+        break;
+      case "Breakdown":
+        maintenanceSubType = "Client Scope";
+        break;
+      case "Non-Warranty":
+        // For Non-Warranty, keep the existing sub type or reset to empty
+        maintenanceSubType = formData.maintenanceSubType || "";
+        break;
+      default:
+        maintenanceSubType = "";
+    }
+
+    setFormData({
+      ...formData,
+      maintenanceType,
+      maintenanceSubType,
+    });
+  };
 
   // Update spare quantities
   const updateSpareQuantity = (spareId: number, quantity: number) => {
@@ -294,9 +282,40 @@ const RequestEntry = () => {
   }, [selectedSpares]);
 
   // Handle form submission
-  // Fixed handleSubmit function in RequestEntry component
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation: Check if QR is verified
+    // if (!isVerified) {
+    //   toast.error("Please scan and verify the QR code before submitting");
+    //   return;
+    // }
+
+    // Validation: Check required fields
+    if (!formData.maintenanceType) {
+      toast.error("Please select a maintenance type");
+      return;
+    }
+
+    if (!formData.vendorId) {
+      toast.error("Please select a vendor");
+      return;
+    }
+
+    if (!formData.engineerId) {
+      toast.error("Please select an engineer");
+      return;
+    }
+
+    if (!formData.serviceStatus) {
+      toast.error("Please select a service status");
+      return;
+    }
+
+    if (!formData.engineerDiagnostics.trim()) {
+      toast.error("Please enter engineer diagnostics");
+      return;
+    }
 
     // Create FormData for file uploads
     const formDataToSend = new FormData();
@@ -308,7 +327,10 @@ const RequestEntry = () => {
       convertToBackendDate(formData.serviceDate),
     );
     formDataToSend.append("maintenanceType", formData.maintenanceType);
-    formDataToSend.append("maintenanceSubType", formData.maintenanceSubType);
+    
+    // Ensure maintenanceSubType is always included in the payload
+    formDataToSend.append("maintenanceSubType", formData.maintenanceSubType || "");
+    
     formDataToSend.append(
       "serviceRequestId",
       formData.serviceRequestId.toString(),
@@ -317,7 +339,7 @@ const RequestEntry = () => {
     formDataToSend.append("engineerId", formData.engineerId.toString());
     formDataToSend.append("engineerDiagnostics", formData.engineerDiagnostics);
     formDataToSend.append("serviceStatus", formData.serviceStatus);
-    formDataToSend.append("remarks", formData.remarks);
+    formDataToSend.append("remarks", formData.remarks || "");
 
     // Add spare parts data with proper file handling
     sparePartsData.forEach((spare, index) => {
@@ -333,29 +355,31 @@ const RequestEntry = () => {
       // Add files with correct field names and null checks
       if (spare.complaintSparePhotoUrl instanceof File) {
         formDataToSend.append(
-          `spareParts[${index}][complaintSparePhotoUrl]`, // Fixed field name
+          `spareParts[${index}][complaintSparePhotoUrl]`,
           spare.complaintSparePhotoUrl,
-          spare.complaintSparePhotoUrl.name, // Include filename
+          spare.complaintSparePhotoUrl.name,
         );
       }
 
       if (spare.sparePhotoUrl instanceof File) {
         formDataToSend.append(
-          `spareParts[${index}][sparePhotoUrl]`, // Fixed field name
+          `spareParts[${index}][sparePhotoUrl]`,
           spare.sparePhotoUrl,
-          spare.sparePhotoUrl.name, // Include filename
+          spare.sparePhotoUrl.name,
         );
       }
     });
 
     // Debug: Log FormData contents (remove in production)
-    // console.log("FormData contents:");
+    console.log("FormData contents:");
     for (const pair of formDataToSend.entries()) {
       console.log(pair[0] + ": " + pair[1]);
     }
 
     try {
       await createServiceEntry(formDataToSend);
+      toast.success("Service entry created successfully!");
+      // Optionally navigate to success page or reset form
     } catch (error) {
       toast.error("Failed to create service entry");
       console.error(error);
@@ -446,9 +470,7 @@ const RequestEntry = () => {
                 (m) => m.label === formData.maintenanceType,
               ) || { id: 0, label: "Select Maintenance Type" }
             }
-            onChange={(val) =>
-              setFormData({ ...formData, maintenanceType: val.label })
-            }
+            onChange={handleMaintenanceTypeChange}
           />
 
           {formData.maintenanceType === "Non-Warranty" && (
@@ -507,31 +529,30 @@ const RequestEntry = () => {
           }
           onChange={(val) => setFormData({ ...formData, vendorId: val.id })}
         />
-{role === "ADMIN" ? (
-  <DropdownSelect
-    required
-    title="Engineer Name"
-    disabled={formState === "display"}
-    options={engineerOptions}
-    selected={
-      engineerOptions.find((opt) => opt.id === formData.engineerId) || {
-        id: 0,
-        label: "Select Engineer",
-      }
-    }
-    onChange={(val) => setFormData({ ...formData, engineerId: val.id })}
-  />
-) : (
-  <Input
-    required
-    disabled
-    className="w-full"
-    title="Engineer Name"
-    inputValue={engineer?.name ?? ""}
-    onChange={() => {}}
-  />
-)}
-
+        {role === "ADMIN" ? (
+          <DropdownSelect
+            required
+            title="Engineer Name"
+            disabled={formState === "display"}
+            options={engineerOptions}
+            selected={
+              engineerOptions.find((opt) => opt.id === formData.engineerId) || {
+                id: 0,
+                label: "Select Engineer",
+              }
+            }
+            onChange={(val) => setFormData({ ...formData, engineerId: val.id })}
+          />
+        ) : (
+          <Input
+            required
+            disabled
+            className="w-full"
+            title="Engineer Name"
+            inputValue={engineer?.name ?? ""}
+            onChange={() => {}}
+          />
+        )}
 
         <DropdownSelect
           title="Machine Brand"
@@ -578,7 +599,7 @@ const RequestEntry = () => {
           selectedOptions={selectedSpares}
           onChange={handleSparesChange}
           placeholder="Select spares to add"
-          required={true}
+          required={false}
         />
         <SparePartsManager
           selectedSpares={selectedSpares}
@@ -597,7 +618,7 @@ const RequestEntry = () => {
           selected={
             statusOptions.find((m) => m.label === formData.serviceStatus) ?? {
               id: 0,
-              label: "Pending",
+              label: "Select Status",
             }
           }
           onChange={(val) =>
