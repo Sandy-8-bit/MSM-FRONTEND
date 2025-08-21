@@ -63,14 +63,15 @@ const SearchBarWithFilter: React.FC<SearchBarProps> = ({
           duration: 0.3,
           ease: [0.4, 0.0, 0.2, 1], // Custom cubic-bezier for smooth animation
         }}
-        className={`group relative flex items-center overflow-hidden rounded-xl border-2 bg-white transition-all duration-300 ease-out ${
+        className={`group relative justify-between flex-col md:flex-row items-start flex items-center overflow-hidden rounded-xl border-2 bg-white transition-all duration-300 ease-out ${
           isFocused
             ? "border-slate-500 shadow-lg ring-4 shadow-blue-100/50 ring-blue-100/30"
             : "border-slate-200 hover:border-slate-300 hover:shadow-md"
         }`}
       >
         {/* Search Icon Button */}
-        <motion.button
+<div className="flex items-center gap-1">
+          <motion.button
           type="button"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -133,9 +134,11 @@ const SearchBarWithFilter: React.FC<SearchBarProps> = ({
             )}
           </AnimatePresence>
         </div>
+</div>
 
         {/* Divider */}
-        <div className="h-8 w-px bg-slate-200" />
+<div className="flex items-center gap-2">
+          <div className="h-8 w-px bg-slate-200" />
 
         {/* Filter Selection */}
         <div className="flex items-center px-2 py-1">
@@ -180,6 +183,7 @@ const SearchBarWithFilter: React.FC<SearchBarProps> = ({
             ))}
           </div>
         </div>
+</div>
       </motion.div>
 
       {/* Search suggestions or results indicator */}

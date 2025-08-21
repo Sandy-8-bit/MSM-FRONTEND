@@ -216,6 +216,7 @@ const ServiceRequestPage = () => {
                         {item.referenceNumber}
                       </p>
                     </div>
+                    
                     <div className="w-24 min-w-24 px-2 pt-1 md:w-28 md:min-w-28">
                       <p className="leading-5 break-words">
                         {item.requestDate}

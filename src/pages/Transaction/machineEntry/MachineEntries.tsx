@@ -164,6 +164,7 @@ const MachineEntry = () => {
           onFilterChange={handleFilterChange}
           onSearch={setSearchValue}
           value={searchValue}
+          
           onChange={(e) => {
             setSearchValue(e.target.value);
             refetch();

@@ -45,6 +45,7 @@ export interface ServiceRequest {
   status?: string;
   machineEntryId?: number;
 }
+
 export interface ServiceRequestResponse {
   data: ServiceRequest[];
   page: number;
