@@ -101,9 +101,6 @@ export const useFetchVendorOptions = () => {
 
 //paginated vendors along with optional search function
 export const useFetchVendorsPaginated = (
-  page: number,
-  limit: number,
-  vendorName?: string,
 ) => {
   const fetchAllVendors = async (): Promise<VendorResponse> => {
     try {
@@ -112,9 +109,6 @@ export const useFetchVendorsPaginated = (
 
       const res = await axiosInstance.get(apiRoutes.vendorsSearch, {
         params: {
-          vendorName: vendorName,
-          page: page - 1,
-          limit,
         },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -142,7 +136,7 @@ export const useFetchVendorsPaginated = (
   };
 
   return useQuery({
-    queryKey: ["vendors", page, limit, vendorName],
+    queryKey: ["vendors"],
     queryFn: fetchAllVendors,
     staleTime: 60 * 10,
     retry: 1,

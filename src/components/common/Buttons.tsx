@@ -3,18 +3,19 @@ import React from "react";
 
 type ButtonState = "default" | "outline";
 interface ButtonSmProps {
-  className?: string;
-  name?: string;
+  className?: string
+  name?: string
 
-  state: ButtonState;
-  text?: string;
-  disabled?: boolean;
-  imgUrl?: string;
-  isPending?: boolean;
-  value?: string;
-  iconPosition?: "left" | "right"; // ✅ New prop
-  type?: "button" | "submit" | "reset";
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  state: ButtonState
+  text?: string
+  disabled?: boolean
+  imgUrl?: string
+  isPending?: boolean
+  value?: string
+  iconPosition?: 'left' | 'right'
+  type?: 'button' | 'submit' | 'reset'
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
+  children?: React.ReactNode
 }
 
 const ButtonSm: React.FC<ButtonSmProps> = ({
@@ -22,43 +23,45 @@ const ButtonSm: React.FC<ButtonSmProps> = ({
   text,
   onClick,
   name,
-  type = "button",
+  type = 'button',
   disabled = false,
-  className = "",
+  className = '',
   imgUrl,
   value,
   isPending = false,
-  iconPosition = "left", // default position
+  iconPosition = 'left', // default position
+  children,
 }) => {
   return (
     <motion.button
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ y: -10 }}
+      animate={{ y: 0 }}
       transition={{ duration: 0.3, delay: 0.2 }}
       type={type}
       disabled={disabled}
-      className={`btn-sm flex cursor-pointer flex-row items-center gap-2 rounded-[9px] px-3 py-2 text-sm select-none ${
-        state === "default"
-          ? "btn-primary bg-blue-500 hover:bg-blue-600 active:bg-blue-700"
-          : `btn-outline text-gray-800 outline-1 outline-slate-300 hover:bg-gray-100 active:bg-gray-200`
+      className={`btn-sm flex cursor-pointer flex-row items-center gap-2 rounded-[9px] px-3 py-2 ${disabled && 'opacity-70'} text-sm select-none ${
+        state === 'default'
+          ? 'btn-primary bg-blue-500 transition-all duration-150 ease-in-out hover:bg-blue-600 active:bg-blue-700'
+          : `btn-outline bg-white font-medium text-gray-800 shadow-sm outline-2 outline-slate-300 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200`
       } ${className}`}
       onClick={onClick}
       value={value}
       name={name}
     >
       {/* Render icon on left (default) */}
-      {imgUrl && iconPosition === "left" && (
+      {imgUrl && iconPosition === 'left' && (
         <img src={imgUrl} alt="" className="nin-h-4 min-w-4" />
       )}
       {text && text}
       {/* Render icon on right */}
-      {imgUrl && iconPosition === "right" && (
+      {imgUrl && iconPosition === 'right' && (
         <img src={imgUrl} alt="" className="min-h-4 min-w-4" />
       )}
       {isPending && <Spinner size="sm" className="text-white" />}
+      {children}
     </motion.button>
-  );
-};
+  )
+}
 
 interface ButtonLgProps {
   state: ButtonState;
