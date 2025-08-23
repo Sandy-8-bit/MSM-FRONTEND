@@ -1,556 +1,983 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// GenericTable.tsx
-import React, { useMemo, useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+// GenericTable.tsx - Enhanced version with improved code quality and documentation
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
-// Replace these with your actual components paths if different
-import SearchSm from '@/components/common/SearchSm'
-import ButtonSm from './Buttons'
-import DropdownSelect from './DropDown'
-import PaginationControls from './Pagination'
-import { Edit2, EyeIcon, Trash2 } from 'lucide-react'
+// Component imports - Replace these with your actual component paths if different
+import SearchSm from "@/components/common/SearchSm";
+import ButtonSm from "./Buttons";
+import DropdownSelect from "./DropDown";
+import PaginationControls from "./Pagination";
+import CheckboxInput from "./CheckBox";
+import { Edit2, EyeIcon, Trash2 } from "lucide-react";
 
-/* Small shimmer box used in skeleton rows */
-const shimmer = {
+/**
+ * Animation configuration for shimmer effect in skeleton loading
+ * Creates a smooth opacity transition for loading states
+ */
+const shimmerAnimationConfig = {
   initial: { opacity: 0.3 },
   animate: {
     opacity: [0.3, 0.6, 0.3],
     transition: { duration: 1.2, repeat: Infinity },
   },
-}
+};
+
+/**
+ * ShimmerBox Component - Creates animated placeholder boxes for skeleton loading
+ * @param className - Additional CSS classes for styling
+ */
 const ShimmerBox = ({ className }: { className?: string }) => (
   <motion.div
-    className={`relative overflow-hidden rounded bg-gray-200 ${className ?? ''}`}
-    variants={shimmer}
+    className={`relative overflow-hidden rounded bg-gray-200 ${className ?? ""}`}
+    variants={shimmerAnimationConfig}
     initial="initial"
     animate="animate"
   >
+    {/* Moving gradient overlay that creates the shimmer effect */}
     <motion.div
       className="absolute top-0 left-[-50%] h-full w-[200%] bg-gradient-to-r from-transparent via-white/40 to-transparent"
-      animate={{ left: ['-50%', '100%'] }}
-      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+      animate={{ left: ["-50%", "100%"] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
     />
   </motion.div>
-)
+);
 
 /**
- * DataCell:
- * - headingTitle: column label
- * - accessVar: either 'branch' or 'branch[1]' or a function (row=>value)
- * - isArray: if true and value is an array, table will automatically use value[1]
- * - render: (value, row, index) => ReactNode  <-- value is already resolved
+ * DataCell Configuration Interface
+ * Defines how each column should be rendered and behave
+ *
+ * @param headingTitle - Column header display text
+ * @param accessVar - Property path (e.g., 'user.name' or 'items[0]') or function to extract data
+ * @param className - Custom CSS classes for column styling
+ * @param sortable - Whether this column can be sorted (default: true)
+ * @param searchable - Whether this column is included in search (default: true)
+ * @param isArray - If true and value is array, automatically uses value[1] as display value
+ * @param render - Custom render function: (cellValue, rowData, rowIndex) => ReactNode
  */
 export type DataCell = {
-  headingTitle: string
-  accessVar?: string | ((row: any) => any)
-  className?: string
-  sortable?: boolean
-  searchable?: boolean
-  isArray?: boolean
-  render?: (value: any, row: any, index: number) => React.ReactNode
-}
+  headingTitle: string;
+  accessVar?: string | ((row: any) => any);
+  className?: string;
+  sortable?: boolean;
+  searchable?: boolean;
+  isArray?: boolean;
+  render?: (value: any, row: any, index: number) => React.ReactNode;
+};
 
+/**
+ * Main GenericTable Component Props Interface
+ * Provides comprehensive configuration options for the table
+ */
 export interface GenericTableProps {
-  data: any[] | { records: any[]; totalRecords?: number }
-  dataCell: DataCell[]
-  isLoading?: boolean
-  isMasterTable?: boolean
-  itemsPerPageOptions?: number[]
-  defaultItemsPerPage?: number
-  newItemLink?: string
-  actionWidth?: number | null
-  onEdit?: (row: any) => void
-  onDelete?: (row: any) => void
-  onView?: (row: any) => void
-  skeletonRows?: number
-  tableTitle?: string
-  className?: string
-  rowKey?: (row: any, index: number) => string | number
+  // Core data - can be simple array or object with records and totalRecords
+  data: any[] | { records: any[]; totalRecords?: number };
+
+  // Column configuration array
+  dataCell: DataCell[];
+
+  // Loading and display states
+  isLoading?: boolean;
+  isMasterTable?: boolean; // If true, entire row becomes clickable and calls onView
+
+  // Pagination configuration
+  itemsPerPageOptions?: number[];
+  defaultItemsPerPage?: number;
+
+  // Navigation and actions
+  newItemLink?: string; // If provided, shows "New" button that navigates to this path
+  actionWidth?: number | null; // Custom width for action column
+  onEdit?: (row: any) => void;
+  onDelete?: (row: any) => void;
+  onView?: (row: any) => void;
+
+  // UI customization
+  skeletonRows?: number; // Number of skeleton rows to show when loading
+  tableTitle?: string; // Currently unused - could be used for table header
+  className?: string; // Additional CSS classes for table container
+
+  // Row identification - used for React keys and selection
+  rowKey?: (row: any, index: number) => string | number;
+
+  // Selection functionality
+  enableSelection?: boolean;
+  initialSelectedIds?: Array<string | number>;
+  onSelectedChange?: (
+    selectedRows: any[],
+    selectedIds: Array<string | number>,
+  ) => void;
+  getRowId?: (row: any, index: number) => string | number; // Alternative to rowKey for selection
 }
 
-function toRecords(input: any): { records: any[]; totalRecords?: number } {
-  if (!input) return { records: [], totalRecords: 0 }
-  if (Array.isArray(input))
-    return { records: input, totalRecords: input.length }
+/**
+ * Imperative API interface for parent components to control table
+ * Exposed through forwardRef
+ */
+export type GenericTableRef = {
+  clearSelection: () => void;
+  getSelectedIds: () => (string | number)[];
+  getSelectedRows: () => any[];
+  selectAllOnPage: () => void;
+};
+
+/**
+ * Normalizes input data to consistent format
+ * Handles both array inputs and object inputs with records property
+ * @param input - Raw data input
+ * @returns Normalized data object with records array and totalRecords count
+ */
+function normalizeDataToRecords(input: any): {
+  records: any[];
+  totalRecords?: number;
+} {
+  // Handle null/undefined input
+  if (!input) return { records: [], totalRecords: 0 };
+
+  // Handle direct array input
+  if (Array.isArray(input)) {
+    return { records: input, totalRecords: input.length };
+  }
+
+  // Handle object input with records property
   return {
     records: input.records || [],
     totalRecords: input.totalRecords ?? input.records?.length ?? 0,
-  }
+  };
 }
 
-// resolves accessVar like 'address.city' or 'arr[0].name'
-function getNestedValue(accessVar: string, obj: any) {
-  if (!accessVar) return undefined
-  const parts = accessVar.replace(/\]/g, '').split(/\.|\[/).filter(Boolean)
-  let cur: any = obj
-  for (const p of parts) {
-    if (cur == null) return undefined
-    const idx = Number(p)
-    cur = isNaN(idx) ? cur[p] : cur[idx]
+/**
+ * Safely resolves nested object properties using dot notation or array indices
+ * Supports paths like: 'user.name', 'items[0].title', 'data.users[1].profile.email'
+ * @param propertyPath - The property path string
+ * @param sourceObject - The object to extract value from
+ * @returns The resolved value or undefined if path doesn't exist
+ */
+function getNestedPropertyValue(propertyPath: string, sourceObject: any): any {
+  if (!propertyPath) return undefined;
+
+  // Parse property path: split by dots and brackets, filter empty strings
+  // 'user.items[0].name' becomes ['user', 'items', '0', 'name']
+  const pathSegments = propertyPath
+    .replace(/\]/g, "")
+    .split(/\.|\[/)
+    .filter(Boolean);
+
+  let currentValue: any = sourceObject;
+
+  // Traverse the path segments
+  for (const segment of pathSegments) {
+    if (currentValue == null) return undefined;
+
+    // Check if segment is numeric (array index)
+    const numericIndex = Number(segment);
+    currentValue = isNaN(numericIndex)
+      ? currentValue[segment] // Property access
+      : currentValue[numericIndex]; // Array access
   }
-  return cur
+
+  return currentValue;
 }
 
-export default function GenericTable({
-  data,
-  dataCell,
-  isMasterTable = false,
-  isLoading = false,
-  itemsPerPageOptions = [5, 10, 15, 20],
-  defaultItemsPerPage = 10,
-  newItemLink,
-  actionWidth = null,
-  onEdit,
-  onDelete,
-  onView,
-  skeletonRows = 5,
-  className = '',
-  rowKey,
-}: GenericTableProps) {
-  const nav = useNavigate()
-  const { records } = toRecords(data)
+/**
+ * Main GenericTable Component
+ * A comprehensive, reusable table component with search, sort, pagination, and selection
+ */
+const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
+  (
+    {
+      data,
+      dataCell,
+      isMasterTable = false,
+      isLoading = false,
+      itemsPerPageOptions = [5, 10, 15, 20],
+      defaultItemsPerPage = 10,
+      newItemLink,
+      actionWidth = null,
+      onEdit,
+      onDelete,
+      onView,
+      skeletonRows = 5,
+      className = "",
+      rowKey,
+      enableSelection = false,
+      initialSelectedIds = [],
+      onSelectedChange,
+      getRowId,
+    },
+    ref,
+  ) => {
+    const navigate = useNavigate();
+    const { records: tableRecords } = normalizeDataToRecords(data);
 
-  const [searchValue, setSearchValue] = useState('')
-  const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortConfig, setSortConfig] = useState<{
-    key: string | ((r: any) => any) | null
-    direction: 'asc' | 'desc'
-  }>({ key: null, direction: 'asc' })
+    // State management for table functionality
+    const [searchQuery, setSearchQuery] = useState("");
+    const [recordsPerPage, setRecordsPerPage] = useState(defaultItemsPerPage);
+    const [currentPageNumber, setCurrentPageNumber] = useState(1);
 
-  // NEW: State to track if initial width sync is done
-  const [isWidthSynced] = useState(false)
+    // Sort configuration state
+    const [sortConfiguration, setSortConfiguration] = useState<{
+      key: string | ((r: any) => any) | null;
+      direction: "asc" | "desc";
+    }>({ key: null, direction: "asc" });
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [JSON.stringify(records)])
+    // Width synchronization state (currently unused but kept for future enhancement)
+    const [isActionWidthSynced] = useState(false);
 
-  const actionBodyRefs = useRef<HTMLDivElement[]>([])
-  const headerActionRef = useRef<HTMLDivElement>(null)
+    // Reset to first page when data changes
+    useEffect(() => {
+      setCurrentPageNumber(1);
+    }, [tableRecords.length]);
 
-  // Calculate estimated action width based on buttons
-  const estimatedActionWidth = useMemo(() => {
-    if (actionWidth !== null) return actionWidth
+    // References for action column width calculation
+    const actionColumnBodyRefs = useRef<HTMLDivElement[]>([]);
+    const actionColumnHeaderRef = useRef<HTMLDivElement>(null);
 
-    let buttonCount = 0
-    if (onView) buttonCount++
-    if (onEdit) buttonCount++
-    if (onDelete) buttonCount++
+    /**
+     * Calculates the estimated width needed for action buttons column
+     * Based on the number of action buttons present
+     */
+    const calculatedActionColumnWidth = useMemo(() => {
+      // Use custom width if provided
+      if (actionWidth !== null) return actionWidth;
 
-    if (buttonCount === 0) return 0
+      // Count active action buttons
+      let activeActionCount = 0;
+      if (onView) activeActionCount++;
+      if (onEdit) activeActionCount++;
+      if (onDelete) activeActionCount++;
 
-    // Estimate: each button is ~36px wide + 8px gap + padding
-    return buttonCount * 36 + (buttonCount - 1) * 8 + 16
-  }, [onView, onEdit, onDelete, actionWidth])
+      // No actions = no width needed
+      if (activeActionCount === 0) return 0;
 
-  // NEW: central resolver that returns a safe primitive (string/number) or the raw value for render functions
-  const resolveCellValue = (row: any, cell: DataCell): any => {
-    let raw: any
-    try {
-      if (typeof cell.accessVar === 'function') raw = cell.accessVar(row)
-      else if (cell.accessVar) raw = getNestedValue(String(cell.accessVar), row)
-      else raw = undefined
-    } catch {
-      raw = undefined
-    }
+      // Estimate width: each button ~36px + 8px gap between + padding
+      const estimatedWidth =
+        activeActionCount * 36 + (activeActionCount - 1) * 8 + 16;
+      return estimatedWidth;
+    }, [onView, onEdit, onDelete, actionWidth]);
 
-    // If user explicitly marked this column as isArray and it's an array, pick index 1
-    if (cell.isArray && Array.isArray(raw)) {
-      // prefer index 1, fallback to index 0 or empty string
-      return raw[1] ?? raw[0] ?? ''
-    }
+    /**
+     * Central value resolver for table cells
+     * Handles different data access patterns and array handling
+     * @param rowData - The row object
+     * @param cellConfig - The column configuration
+     * @returns The resolved cell value (raw for render functions)
+     */
+    const resolveCellValue = (rowData: any, cellConfig: DataCell): any => {
+      let resolvedValue: any;
 
-    // Return raw value for render functions to handle
-    return raw
-  }
-
-  // Helper function to get searchable/sortable string value
-  const getStringValue = (raw: any): string => {
-    if (raw === null || raw === undefined) return ''
-
-    // If value is array, handle gracefully: prefer index 1 if present
-    if (Array.isArray(raw)) return String(raw[1] ?? raw[0] ?? '')
-
-    // objects -> try to pick name-like props, else JSON stringify fallback
-    if (raw !== null && typeof raw === 'object') {
-      if ('name' in raw) return String((raw as any).name)
-      if ('label' in raw) return String((raw as any).label)
-      // fallback to stringify (rare, but safe)
       try {
-        return JSON.stringify(raw)
-      } catch {
-        return String(raw)
-      }
-    }
-
-    // primitives
-    return String(raw)
-  }
-
-  // SEARCH
-  const searchableCells = dataCell.filter(
-    (c) => (c.searchable ?? true) === true
-  )
-  const filtered = useMemo(() => {
-    if (!searchValue) return records
-    const q = searchValue.toLowerCase().trim()
-    return records.filter((row) => {
-      for (const cell of searchableCells) {
-        const v = resolveCellValue(row, cell)
-        const searchStr = getStringValue(v)
-        if (searchStr.toLowerCase().includes(q)) return true
-      }
-      return false
-    })
-  }, [records, searchValue, dataCell])
-
-  // SORT
-  const sorted = useMemo(() => {
-    if (!sortConfig.key) return filtered
-    const arr = [...filtered]
-    arr.sort((a, b) => {
-      let valA: any, valB: any
-      if (typeof sortConfig.key === 'function') {
-        valA = sortConfig.key(a)
-        valB = sortConfig.key(b)
-      } else {
-        // find matching column by accessVar or headingTitle
-        const col = dataCell.find(
-          (c) =>
-            (typeof c.accessVar === 'string' &&
-              c.accessVar === sortConfig.key) ||
-            c.headingTitle === sortConfig.key
-        )
-        if (col) {
-          valA = resolveCellValue(a, col)
-          valB = resolveCellValue(b, col)
+        if (typeof cellConfig.accessVar === "function") {
+          // Function-based value extraction
+          resolvedValue = cellConfig.accessVar(rowData);
+        } else if (cellConfig.accessVar) {
+          // String path-based value extraction
+          resolvedValue = getNestedPropertyValue(
+            String(cellConfig.accessVar),
+            rowData,
+          );
         } else {
-          valA = getNestedValue(String(sortConfig.key), a)
-          valB = getNestedValue(String(sortConfig.key), b)
+          // No accessor defined
+          resolvedValue = undefined;
+        }
+      } catch {
+        // Safely handle any extraction errors
+        resolvedValue = undefined;
+      }
+
+      // Handle array values when explicitly marked as array column
+      if (cellConfig.isArray && Array.isArray(resolvedValue)) {
+        // Prefer index 1, fallback to index 0, then empty string
+        return resolvedValue[1] ?? resolvedValue[0] ?? "";
+      }
+
+      // Return raw value for render functions to handle appropriately
+      return resolvedValue;
+    };
+
+    /**
+     * Converts any value to a searchable/sortable string representation
+     * Handles various data types gracefully
+     * @param rawValue - The raw value to convert
+     * @returns String representation suitable for search/sort operations
+     */
+    const convertValueToSearchableString = (rawValue: any): string => {
+      if (rawValue === null || rawValue === undefined) return "";
+
+      // Handle array values
+      if (Array.isArray(rawValue)) {
+        return String(rawValue[1] ?? rawValue[0] ?? "");
+      }
+
+      // Handle object values
+      if (rawValue !== null && typeof rawValue === "object") {
+        // Try common object properties first
+        if ("name" in rawValue) return String((rawValue as any).name);
+        if ("label" in rawValue) return String((rawValue as any).label);
+        if ("title" in rawValue) return String((rawValue as any).title);
+
+        // Fallback to JSON string representation
+        try {
+          return JSON.stringify(rawValue);
+        } catch {
+          return String(rawValue);
         }
       }
 
-      // Convert to sortable strings
-      const strA = getStringValue(valA)
-      const strB = getStringValue(valB)
+      // Handle primitive values
+      return String(rawValue);
+    };
 
-      if (!strA && !strB) return 0
-      if (!strA) return 1
-      if (!strB) return -1
+    // Get columns that are searchable (default: all columns are searchable)
+    const searchableColumns = dataCell.filter(
+      (column) => (column.searchable ?? true) === true,
+    );
 
-      // Try numeric comparison first
-      const numA = Number(strA)
-      const numB = Number(strB)
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return sortConfig.direction === 'asc' ? numA - numB : numB - numA
+    /**
+     * Filter records based on search query
+     * Searches across all searchable columns
+     */
+    const searchFilteredRecords = useMemo(() => {
+      if (!searchQuery.trim()) return tableRecords;
+
+      const normalizedSearchQuery = searchQuery.toLowerCase().trim();
+
+      return tableRecords.filter((record) => {
+        // Check if search query matches any searchable column
+        for (const column of searchableColumns) {
+          const cellValue = resolveCellValue(record, column);
+          const searchableText = convertValueToSearchableString(cellValue);
+
+          if (searchableText.toLowerCase().includes(normalizedSearchQuery)) {
+            return true;
+          }
+        }
+        return false;
+      });
+    }, [tableRecords, searchQuery, dataCell]);
+
+    /**
+     * Sort the filtered records based on sort configuration
+     */
+    const sortedAndFilteredRecords = useMemo(() => {
+      if (!sortConfiguration.key) return searchFilteredRecords;
+
+      const recordsToSort = [...searchFilteredRecords];
+
+      recordsToSort.sort((recordA, recordB) => {
+        let valueA: any, valueB: any;
+
+        if (typeof sortConfiguration.key === "function") {
+          // Function-based sorting
+          valueA = sortConfiguration.key(recordA);
+          valueB = sortConfiguration.key(recordB);
+        } else {
+          // Find matching column configuration
+          const matchingColumn = dataCell.find(
+            (column) =>
+              (typeof column.accessVar === "string" &&
+                column.accessVar === sortConfiguration.key) ||
+              column.headingTitle === sortConfiguration.key,
+          );
+
+          if (matchingColumn) {
+            valueA = resolveCellValue(recordA, matchingColumn);
+            valueB = resolveCellValue(recordB, matchingColumn);
+          } else {
+            // Fallback to direct property access
+            valueA = getNestedPropertyValue(
+              String(sortConfiguration.key),
+              recordA,
+            );
+            valueB = getNestedPropertyValue(
+              String(sortConfiguration.key),
+              recordB,
+            );
+          }
+        }
+
+        // Convert values to comparable strings
+        const stringA = convertValueToSearchableString(valueA);
+        const stringB = convertValueToSearchableString(valueB);
+
+        // Handle empty values
+        if (!stringA && !stringB) return 0;
+        if (!stringA) return 1; // Empty values go to end
+        if (!stringB) return -1;
+
+        // Attempt numeric comparison first
+        const numericA = Number(stringA);
+        const numericB = Number(stringB);
+
+        if (!isNaN(numericA) && !isNaN(numericB)) {
+          return sortConfiguration.direction === "asc"
+            ? numericA - numericB
+            : numericB - numericA;
+        }
+
+        // Fall back to string comparison
+        const comparisonResult = stringA.localeCompare(stringB);
+        return sortConfiguration.direction === "asc"
+          ? comparisonResult
+          : -comparisonResult;
+      });
+
+      return recordsToSort;
+    }, [searchFilteredRecords, sortConfiguration, dataCell]);
+
+    // Calculate pagination values
+    const totalPagesCount = Math.max(
+      1,
+      Math.ceil(sortedAndFilteredRecords.length / recordsPerPage),
+    );
+
+    // Reset to first page if current page exceeds total pages
+    useEffect(() => {
+      if (currentPageNumber > totalPagesCount) {
+        setCurrentPageNumber(1);
       }
+    }, [totalPagesCount]);
 
-      // String comparison
-      return sortConfig.direction === 'asc'
-        ? strA.localeCompare(strB)
-        : strB.localeCompare(strA)
-    })
-    return arr
-  }, [filtered, sortConfig, dataCell])
+    /**
+     * Get records for current page
+     */
+    const currentPageRecords = useMemo(() => {
+      const startIndex = (currentPageNumber - 1) * recordsPerPage;
+      const endIndex = startIndex + recordsPerPage;
+      return sortedAndFilteredRecords.slice(startIndex, endIndex);
+    }, [sortedAndFilteredRecords, currentPageNumber, recordsPerPage]);
 
-  // PAGINATION
-  const totalPages = Math.max(1, Math.ceil(sorted.length / itemsPerPage))
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(1)
-  }, [totalPages])
+    /**
+     * Handle column sorting
+     * Toggles sort direction if same column, otherwise sets new column with ascending order
+     */
+    const handleColumnSort = (columnConfig: DataCell) => {
+      if (columnConfig.sortable === false) return;
 
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return sorted.slice(start, start + itemsPerPage)
-  }, [sorted, currentPage, itemsPerPage])
+      const sortKey = columnConfig.accessVar ?? columnConfig.headingTitle;
 
-  // helpers
-  const onSort = (cell: DataCell) => {
-    if (cell.sortable === false) return
-    const key = cell.accessVar ?? cell.headingTitle
-    setSortConfig((prev) => {
-      if (prev.key === key)
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
-      return { key, direction: 'asc' }
-    })
-  }
+      setSortConfiguration((previousConfig) => {
+        if (previousConfig.key === sortKey) {
+          // Toggle direction for same column
+          return {
+            key: sortKey,
+            direction: previousConfig.direction === "asc" ? "desc" : "asc",
+          };
+        }
+        // New column - start with ascending
+        return { key: sortKey, direction: "asc" };
+      });
+    };
 
-  // Get base className for consistent width and alignment
-  const getColumnClassName = (cell: DataCell) => {
-    // fallback is compact; your cells can override via className
-    const base = cell.className ?? 'min-w-[104px] w-[104px] max-w-[104px]'
-    // flex-none/shrink-0 = identical column width in header & body
-    return `flex-none shrink-0 ${base}`
-  }
+    /**
+     * Get CSS classes for consistent column width and alignment
+     */
+    const getColumnCssClasses = (columnConfig: DataCell) => {
+      // Use custom className or default to compact width
+      const baseClasses =
+        columnConfig.className ?? "min-w-[104px] w-[104px] max-w-[104px]";
+      // flex-none ensures consistent column widths between header and body
+      return `flex-none shrink-0 ${baseClasses}`;
+    };
 
-  const renderHeaderCell = (cell: DataCell, idx: number) => (
-    <div
-      key={cell.headingTitle + idx}
-      className={`px-1 ${getColumnClassName(cell)}`}
-      onClick={() => onSort(cell)}
-      role={cell.sortable === false ? undefined : 'button'}
-    >
-      <div className="flex cursor-pointer items-center gap-1 select-none">
-        <p
-          className={`text-sm font-semibold text-slate-800 ${sortConfig.key === (cell.accessVar ?? cell.headingTitle) ? 'font-bold' : ''}`}
-        >
-          {cell.headingTitle}
-        </p>
-        {cell.sortable !== false && (
-          <img
-            src="/icons/dropdown.svg"
-            alt="sort"
-            className={`h-4 w-4 transition-transform ${sortConfig.key === (cell.accessVar ?? cell.headingTitle) && sortConfig.direction === 'desc' ? 'rotate-180' : ''}`}
-          />
-        )}
+    /**
+     * Selection functionality
+     * Resolves a stable ID for each row for selection tracking
+     */
+    const resolveUniqueRowId = (rowData: any, rowIndex: number) => {
+      if (typeof getRowId === "function") return getRowId(rowData, rowIndex);
+      if (typeof rowKey === "function") return rowKey(rowData, rowIndex);
+      // Fallback to common ID properties or index
+      return rowData?.id ?? rowData?.code ?? rowIndex;
+    };
+
+    // Selection state using Set for O(1) operations
+    const [selectedRowIds, setSelectedRowIds] = useState<Set<string | number>>(
+      new Set(initialSelectedIds),
+    );
+
+    // Get IDs of all rows on current page
+    const currentPageRowIds = useMemo(
+      () =>
+        currentPageRecords.map((record, index) =>
+          resolveUniqueRowId(record, index),
+        ),
+      [currentPageRecords, rowKey, getRowId],
+    );
+
+    // Check if all rows on current page are selected
+    const areAllRowsSelectedOnCurrentPage = useMemo(
+      () =>
+        currentPageRowIds.length > 0 &&
+        currentPageRowIds.every((rowId) => selectedRowIds.has(rowId)),
+      [currentPageRowIds, selectedRowIds],
+    );
+
+    /**
+     * Toggle selection state for a single row
+     */
+    const toggleRowSelection = (rowData: any, rowIndex: number) => {
+      const rowId = resolveUniqueRowId(rowData, rowIndex);
+      setSelectedRowIds((previousSelection) => {
+        const newSelection = new Set(previousSelection);
+        if (newSelection.has(rowId)) {
+          newSelection.delete(rowId);
+        } else {
+          newSelection.add(rowId);
+        }
+        return newSelection;
+      });
+    };
+
+    /**
+     * Toggle selection for all rows on current page
+     * Wrapped in useCallback to prevent unnecessary re-renders
+     */
+    const toggleSelectAllOnCurrentPage = useCallback(() => {
+      setSelectedRowIds((previousSelection) => {
+        const newSelection = new Set(previousSelection);
+        if (areAllRowsSelectedOnCurrentPage) {
+          // Deselect all on current page
+          currentPageRowIds.forEach((rowId) => newSelection.delete(rowId));
+        } else {
+          // Select all on current page
+          currentPageRowIds.forEach((rowId) => newSelection.add(rowId));
+        }
+        return newSelection;
+      });
+    }, [areAllRowsSelectedOnCurrentPage, currentPageRowIds]);
+
+    /**
+     * Clear all selections
+     */
+    const clearAllSelections = () => setSelectedRowIds(new Set());
+
+    /**
+     * Get currently selected row objects
+     */
+    const selectedRowObjects = useMemo(
+      () =>
+        tableRecords.filter((record, index) =>
+          selectedRowIds.has(resolveUniqueRowId(record, index)),
+        ),
+      [tableRecords, selectedRowIds, rowKey, getRowId],
+    );
+
+    // Notify parent component whenever selection changes
+    useEffect(() => {
+      if (onSelectedChange) {
+        onSelectedChange(selectedRowObjects, Array.from(selectedRowIds));
+      }
+    }, [selectedRowObjects, selectedRowIds]);
+
+    /**
+     * Expose imperative API for parent components
+     */
+    useImperativeHandle(
+      ref,
+      () => ({
+        clearSelection: clearAllSelections,
+        getSelectedIds: () => Array.from(selectedRowIds),
+        getSelectedRows: () => selectedRowObjects,
+        selectAllOnPage: toggleSelectAllOnCurrentPage,
+      }),
+      [selectedRowObjects, selectedRowIds, toggleSelectAllOnCurrentPage],
+    );
+
+    /**
+     * Render a table header cell with sorting capability
+     */
+    const renderTableHeaderCell = (
+      columnConfig: DataCell,
+      columnIndex: number,
+    ) => (
+      <div
+        key={columnConfig.headingTitle + columnIndex}
+        className={`px-1 ${getColumnCssClasses(columnConfig)}`}
+        onClick={() => handleColumnSort(columnConfig)}
+        role={columnConfig.sortable === false ? undefined : "button"}
+      >
+        <div className="flex cursor-pointer items-center gap-1 select-none">
+          <p
+            className={`text-sm font-semibold text-slate-800 ${
+              sortConfiguration.key ===
+              (columnConfig.accessVar ?? columnConfig.headingTitle)
+                ? "font-bold"
+                : ""
+            }`}
+          >
+            {columnConfig.headingTitle}
+          </p>
+          {columnConfig.sortable !== false && (
+            <img
+              src="/icons/dropdown.svg"
+              alt="sort"
+              className={`h-4 w-4 transition-transform ${
+                sortConfiguration.key ===
+                  (columnConfig.accessVar ?? columnConfig.headingTitle) &&
+                sortConfiguration.direction === "desc"
+                  ? "rotate-180"
+                  : ""
+              }`}
+            />
+          )}
+        </div>
       </div>
-    </div>
-  )
+    );
 
-  const hasActions = onEdit || onDelete || onView
+    // Check if any actions are available
+    const hasActionButtons = onEdit || onDelete || onView;
 
-  const headerAction = hasActions ? (
-    <div
-      className="flex min-w-max flex-col items-start"
-      ref={headerActionRef}
-      style={{
-        width:
-          actionWidth !== null
-            ? `${actionWidth}px`
-            : !isWidthSynced
-              ? `${isMasterTable ? estimatedActionWidth / 1.5 : estimatedActionWidth}px`
-              : undefined,
-      }}
-    >
-      <p className="px-3 text-sm font-semibold text-zinc-900">Action</p>
-    </div>
-  ) : null
+    /**
+     * Render action column header
+     */
+    const actionColumnHeader = hasActionButtons ? (
+      <div
+        className="flex min-w-max flex-col items-start"
+        ref={actionColumnHeaderRef}
+        style={{
+          width:
+            actionWidth !== null
+              ? `${actionWidth}px`
+              : !isActionWidthSynced
+                ? `${isMasterTable ? calculatedActionColumnWidth / 1.5 : calculatedActionColumnWidth}px`
+                : undefined,
+        }}
+      >
+        <p className="px-3 text-sm font-semibold text-zinc-900">Action</p>
+      </div>
+    ) : null;
 
-  const defaultRowKey = (r: any, i: number) =>
-    rowKey ? rowKey(r, i) : (r.id ?? r.code ?? i)
-  const skeletonCount = isLoading ? itemsPerPage || skeletonRows : 0
+    /**
+     * Default row key function when none provided
+     */
+    const getDefaultRowKey = (rowData: any, rowIndex: number) =>
+      rowKey
+        ? rowKey(rowData, rowIndex)
+        : (rowData.id ?? rowData.code ?? rowIndex);
 
-  return (
-    <div
-      className={`flex flex-col justify-between rounded-[12px] bg-white py-4 ${className}`}
-    >
-      <div className="body-contaienr flex flex-col gap-0">
-        {/* controls */}
-        <header className="mb-3 flex w-full items-center justify-between px-4">
-          <section className="flex items-center gap-2">
-            <SearchSm
-              placeholder="Search"
-              onChange={(e: any) => {
-                setSearchValue(e.target.value)
-                setCurrentPage(1)
-              }}
-              inputValue={searchValue}
-              onSearch={() => {}}
-              onClear={() => {
-                setSearchValue('')
-                setCurrentPage(1)
-              }}
-            />
+    // Calculate skeleton rows count for loading state
+    const skeletonRowsCount = isLoading ? recordsPerPage || skeletonRows : 0;
 
-            <DropdownSelect
-              title=""
-              direction="down"
-              options={itemsPerPageOptions.map((item) => ({
-                id: item,
-                label: `${item} Entries`,
-              }))}
-              selected={{ id: itemsPerPage, label: `${itemsPerPage} Entries` }}
-              onChange={(e: any) => {
-                setItemsPerPage(e.id)
-                setCurrentPage(1)
-              }}
-            />
-          </section>
-          <div className="ml-auto flex items-center gap-2">
-            {newItemLink && (
-              <ButtonSm
-                className="py-3 text-white"
-                state="default"
-                text="New"
-                onClick={() => nav(newItemLink)}
+    return (
+      <div
+        className={`flex flex-col justify-between rounded-[12px] bg-white py-4 ${className}`}
+      >
+        <div className="body-container flex flex-col gap-0">
+          {/* Table Controls Header */}
+          <header className="mb-3 flex w-full items-center justify-between px-4">
+            {/* Left side controls - Search and Items per page */}
+            <section className="flex items-center gap-2">
+              <SearchSm
+                placeholder="Search"
+                onChange={(event: any) => {
+                  setSearchQuery(event.target.value);
+                  setCurrentPageNumber(1); // Reset to first page on search
+                }}
+                inputValue={searchQuery}
+                onSearch={() => {}} // Search is handled by onChange
+                onClear={() => {
+                  setSearchQuery("");
+                  setCurrentPageNumber(1);
+                }}
               />
-            )}
-            <PaginationControls
-              totalPages={totalPages}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-          <div />
-        </header>
 
-        {/* table */}
-        <div className="tables flex min-h-[300px] w-full flex-col overflow-x-auto bg-white md:overflow-x-auto">
-          <header className="header flex w-full flex-row items-center justify-between gap-2 bg-slate-50 px-3 py-3">
-            <div className="flex w-[56px] max-w-[56px] min-w-[56px] flex-none shrink-0 items-center justify-start gap-2 px-1.5">
-              <p className="text-sm font-semibold text-zinc-900">S.No</p>
+              <DropdownSelect
+                title=""
+                direction="down"
+                options={itemsPerPageOptions.map((itemCount) => ({
+                  id: itemCount,
+                  label: `${itemCount} Entries`,
+                }))}
+                selected={{
+                  id: recordsPerPage,
+                  label: `${recordsPerPage} Entries`,
+                }}
+                onChange={(selectedOption: any) => {
+                  setRecordsPerPage(selectedOption.id);
+                  setCurrentPageNumber(1); // Reset to first page when changing items per page
+                }}
+              />
+            </section>
+
+            {/* Right side controls - New button, Selection indicator, Pagination */}
+            <div className="ml-auto flex items-center gap-2">
+              {/* New Item Button */}
+              {newItemLink && (
+                <ButtonSm
+                  className="py-3 text-white"
+                  state="default"
+                  text="New"
+                  onClick={() => navigate(newItemLink)}
+                />
+              )}
+
+              {/* Selection Status Indicator */}
+              {enableSelection && selectedRowIds.size > 0 && (
+                <div className="ml-2 flex flex-row items-center gap-2 rounded-md border border-blue-500 bg-blue-500/10 px-2 py-1">
+                  <span className="text-sm font-medium text-blue-600">
+                    Selected {selectedRowIds.size}
+                  </span>
+                  <img
+                    onClick={clearAllSelections}
+                    src="/icons/chip-x-icon.svg"
+                    alt="Clear Selection"
+                    className="h-4 w-4 cursor-pointer transition-transform hover:scale-110"
+                  />
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              <PaginationControls
+                totalPages={totalPagesCount}
+                currentPage={currentPageNumber}
+                onPageChange={setCurrentPageNumber}
+              />
             </div>
-
-            {dataCell.map((cell, idx) => renderHeaderCell(cell, idx))}
-
-            {hasActions && headerAction}
+            <div />
           </header>
 
-          {/* skeleton */}
-          {isLoading && (
-            <div>
-              {Array.from({ length: skeletonCount }).map((_, rIdx) => (
+          {/* Main Table Container */}
+          <div className="tables flex min-h-[300px] w-full flex-col overflow-x-auto bg-white md:overflow-x-auto">
+            {/* Table Header */}
+            <header className="header flex w-full flex-row items-center justify-between gap-2 bg-slate-50 px-3 py-3">
+              {/* Serial Number Column with optional Selection Checkbox */}
+              <div
+                className={`flex ${
+                  enableSelection
+                    ? "w-[88px] max-w-[88px] min-w-[88px]"
+                    : "w-[56px] max-w-[56px] min-w-[56px]"
+                } flex-none shrink-0 items-center justify-start gap-2 px-1.5`}
+              >
+                <p className="text-sm font-semibold text-zinc-900">S.No</p>
+                {enableSelection && (
+                  <CheckboxInput
+                    checked={areAllRowsSelectedOnCurrentPage}
+                    onChange={toggleSelectAllOnCurrentPage}
+                    label=""
+                  />
+                )}
+              </div>
+
+              {/* Data Column Headers */}
+              {dataCell.map((columnConfig, columnIndex) =>
+                renderTableHeaderCell(columnConfig, columnIndex),
+              )}
+
+              {/* Action Column Header */}
+              {hasActionButtons && actionColumnHeader}
+            </header>
+
+            {/* Loading Skeleton Rows */}
+            {isLoading && (
+              <div>
+                {Array.from({ length: skeletonRowsCount }).map(
+                  (_, skeletonRowIndex) => (
+                    <div
+                      key={skeletonRowIndex}
+                      className="flex w-full flex-row items-center justify-between border-b border-slate-200 px-3 py-2"
+                    >
+                      {/* Skeleton Serial Number Column */}
+                      <div className="flex w-8 min-w-8 items-center justify-start gap-2 pt-1 pl-1.5">
+                        <ShimmerBox className="h-4 w-10" />
+                      </div>
+
+                      {/* Skeleton Data Columns */}
+                      {dataCell.map((columnConfig, columnIndex) => (
+                        <div
+                          key={columnIndex}
+                          className={`px-1 pt-1 ${getColumnCssClasses(columnConfig)}`}
+                        >
+                          <ShimmerBox className="h-4 w-full max-w-28" />
+                        </div>
+                      ))}
+
+                      {/* Skeleton Action Buttons */}
+                      {hasActionButtons && (
+                        <div
+                          className="flex min-w-max items-center gap-2 px-1"
+                          style={{
+                            width:
+                              actionWidth !== null
+                                ? `${actionWidth}px`
+                                : `${calculatedActionColumnWidth}px`,
+                          }}
+                        >
+                          {onView && !isMasterTable && (
+                            <ShimmerBox className="h-4 w-20" />
+                          )}
+                          {onEdit && <ShimmerBox className="h-4 w-20" />}
+                          {onDelete && <ShimmerBox className="h-4 w-20" />}
+                        </div>
+                      )}
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+
+            {/* No Data Message */}
+            {!isLoading && currentPageRecords.length === 0 && (
+              <h2 className="text-md my-3 text-center font-medium text-zinc-600">
+                No Records Found
+              </h2>
+            )}
+
+            {/* Table Data Rows */}
+            {!isLoading &&
+              currentPageRecords.map((rowData, rowIndex) => (
                 <div
-                  key={rIdx}
-                  className="flex w-full flex-row items-center justify-between border-b border-slate-200 px-3 py-2"
+                  style={{
+                    cursor: isMasterTable ? "pointer" : "auto",
+                  }}
+                  onClick={(event) => {
+                    if (isMasterTable && onView) {
+                      event.stopPropagation();
+                      onView(rowData);
+                    }
+                  }}
+                  key={getDefaultRowKey(rowData, rowIndex)}
+                  className="flex w-full flex-row items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-sm text-zinc-700 hover:bg-slate-50"
                 >
-                  <div className="flex w-8 min-w-8 items-center justify-start gap-2 pt-1 pl-1.5">
-                    <ShimmerBox className="h-4 w-10" />
+                  {/* Serial Number Column with optional Selection Checkbox */}
+                  <div
+                    className={`flex ${
+                      enableSelection
+                        ? "w-[88px] max-w-[88px] min-w-[88px]"
+                        : "w-[56px] max-w-[56px] min-w-[56px]"
+                    } flex-none shrink-0 items-center justify-start gap-2 pt-1 pl-1.5`}
+                  >
+                    <p className="w-10">
+                      {(currentPageNumber - 1) * recordsPerPage + rowIndex + 1}
+                    </p>
+
+                    {enableSelection && (
+                      <CheckboxInput
+                        checked={selectedRowIds.has(
+                          resolveUniqueRowId(rowData, rowIndex),
+                        )}
+                        onChange={(event: any) => {
+                          event.stopPropagation?.();
+                          toggleRowSelection(rowData, rowIndex);
+                        }}
+                        label=""
+                      />
+                    )}
                   </div>
 
-                  {dataCell.map((cell, cIdx) => (
-                    <div
-                      key={cIdx}
-                      className={`px-1 pt-1 ${getColumnClassName(cell)}`}
-                    >
-                      <ShimmerBox className="h-4 w-full max-w-28" />
-                    </div>
-                  ))}
+                  {/* Data Columns */}
+                  {dataCell.map((columnConfig, columnIndex) => {
+                    const cellValue = resolveCellValue(rowData, columnConfig);
+                    return (
+                      <div
+                        key={columnConfig.headingTitle + columnIndex}
+                        className={`px-2 pt-1 ${getColumnCssClasses(columnConfig)}`}
+                      >
+                        <div className="text-left text-sm leading-tight font-medium break-words whitespace-normal">
+                          {columnConfig.render ? (
+                            // Use custom render function if provided
+                            columnConfig.render(cellValue, rowData, rowIndex)
+                          ) : (
+                            // Default rendering logic
+                            <span>
+                              {Array.isArray(cellValue)
+                                ? (cellValue[1] ?? cellValue[0] ?? "-")
+                                : cellValue == null
+                                  ? "-"
+                                  : String(cellValue)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
 
-                  {hasActions && (
+                  {/* Action Buttons Column */}
+                  {hasActionButtons && (
                     <div
-                      className="flex min-w-max items-center gap-2 px-1"
-                      style={{
-                        width:
-                          actionWidth !== null
-                            ? `${actionWidth}px`
-                            : `${estimatedActionWidth}px`,
+                      className="flex min-w-max flex-row items-center gap-2 px-2"
+                      ref={(element) => {
+                        if (element) actionColumnBodyRefs.current.push(element);
                       }}
                     >
+                      {/* View Button - Hidden in master table mode since entire row is clickable */}
                       {onView && !isMasterTable && (
-                        <ShimmerBox className="h-4 w-20" />
+                        <ButtonSm
+                          className="aspect-square bg-white outline-1 outline-white"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onView(rowData);
+                          }}
+                          iconPosition="right"
+                          state="outline"
+                        >
+                          <EyeIcon size={14} />
+                        </ButtonSm>
                       )}
-                      {onEdit && <ShimmerBox className="h-4 w-20" />}
-                      {onDelete && <ShimmerBox className="h-4 w-20" />}
+
+                      {/* Edit Button */}
+                      {onEdit && (
+                        <ButtonSm
+                          className="aspect-square bg-white outline-1 outline-white"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onEdit(rowData);
+                          }}
+                          state="outline"
+                        >
+                          <Edit2 size={14} />
+                        </ButtonSm>
+                      )}
+
+                      {/* Delete Button */}
+                      {onDelete && (
+                        <ButtonSm
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDelete(rowData);
+                          }}
+                          className="aspect-square bg-white text-red-500 shadow-sm outline-1 outline-white hover:bg-red-100 hover:text-red-500 active:bg-red-100 active:text-red-500"
+                          state="default"
+                        >
+                          <Trash2 size={14} />
+                        </ButtonSm>
+                      )}
                     </div>
                   )}
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* no data */}
-          {!isLoading && paginated.length === 0 && (
-            <h2 className="text-md my-3 text-center font-medium text-zinc-600">
-              No Records Found
-            </h2>
-          )}
-
-          {/* rows */}
-          {!isLoading &&
-            paginated.map((row, idx) => (
-              <div
-                style={{
-                  cursor: isMasterTable ? 'pointer' : 'auto',
-                }}
-                onClick={(e) => {
-                  if (isMasterTable && onView) {
-                    e.stopPropagation()
-                    onView(row)
-                  }
-                }}
-                key={defaultRowKey(row, idx)}
-                className="flex w-full flex-row items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-sm text-zinc-700 hover:bg-slate-50"
-              >
-                <div className="flex w-[56px] max-w-[56px] min-w-[56px] flex-none shrink-0 items-center justify-start gap-2 pt-1 pl-1.5">
-                  <p>{(currentPage - 1) * itemsPerPage + idx + 1}</p>
-                </div>
-
-                {dataCell.map((cell, cIdx) => {
-                  const value = resolveCellValue(row, cell)
-                  return (
-                    <div
-                      key={cell.headingTitle + cIdx}
-                      className={`px-2 pt-1 ${getColumnClassName(cell)}`}
-                    >
-                      <div className="text-left text-sm leading-tight font-medium break-words whitespace-normal">
-                        {cell.render ? (
-                          cell.render(value, row, idx)
-                        ) : (
-                          <span>
-                            {Array.isArray(value)
-                              ? (value[1] ?? value[0] ?? '-')
-                              : value == null
-                                ? '-'
-                                : String(value)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {hasActions && (
-                  <div
-                    className="flex min-w-max flex-row items-center gap-2 px-2"
-                    ref={(el) => {
-                      if (el) actionBodyRefs.current.push(el)
-                    }}
-                  >
-                    {onView && !isMasterTable && (
-                      <ButtonSm
-                        className="aspect-square bg-white outline-1 outline-white"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onView(row)
-                        }}
-                        iconPosition="right"
-                        state="outline"
-                      >
-                        <EyeIcon size={14} />
-                      </ButtonSm>
-                    )}
-                    {onEdit && (
-                      <ButtonSm
-                        className="aspect-square bg-white outline-1 outline-white"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEdit(row)
-                        }}
-                        state="outline"
-                      >
-                        <Edit2 size={14} />
-                      </ButtonSm>
-                    )}
-                    {onDelete && (
-                      <ButtonSm
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDelete(row)
-                        }}
-                        className="aspect-square bg-white text-red-500 shadow-sm outline-1 outline-white hover:bg-red-100 hover:text-red-500 active:bg-red-100 active:text-red-500"
-                        state="default"
-                      >
-                        <Trash2 size={14} />
-                      </ButtonSm>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+          </div>
         </div>
+
+        {/* Table Footer with Record Count Information */}
+        <footer className="container mt-3 flex min-w-full flex-row items-center gap-2 self-end px-4 py-2">
+          {/* Visual indicator dot */}
+          <div className="h-[10px] w-[10px] rounded-full bg-blue-500" />
+
+          {/* Record count display */}
+          <div className="text-sm text-zinc-600">
+            Showing {(currentPageNumber - 1) * recordsPerPage + 1} -{" "}
+            {Math.min(
+              currentPageNumber * recordsPerPage,
+              sortedAndFilteredRecords.length,
+            )}{" "}
+            of {sortedAndFilteredRecords.length}
+          </div>
+        </footer>
       </div>
+    );
+  },
+);
 
-      {/* footer pagination */}
-      <footer className="container mt-3 flex min-w-full flex-row items-center gap-2 self-end px-4 py-2">
-        <div className="h-[10px] w-[10px] rounded-full bg-blue-500" />
-        <div className="text-sm text-zinc-600">
-          Showing {(currentPage - 1) * itemsPerPage + 1} -{' '}
-          {Math.min(currentPage * itemsPerPage, sorted.length)} of{' '}
-          {sorted.length}
-        </div>
-      </footer>
-    </div>
-  )
-}
+// Set display name for better debugging experience
+GenericTable.displayName = "GenericTable";
+
+export default GenericTable;

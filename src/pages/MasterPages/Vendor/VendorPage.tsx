@@ -14,7 +14,9 @@ import type { VendorDetails } from "../../../types/masterApiTypes";
 import type { FormState } from "../../../types/appTypes";
 
 // ✅ GenericTable import
-import GenericTable, { type DataCell } from "../../../components/common/GenericTable";
+import GenericTable, {
+  type DataCell,
+} from "../../../components/common/GenericTable";
 
 const VendorsPage = () => {
   const navigate = useNavigate();
@@ -31,13 +33,10 @@ const VendorsPage = () => {
   const [vendor, setVendor] = useState<VendorDetails | null>(null);
   const [formState, setFormState] = useState<FormState>("create");
 
-
-
   // ✅ Fetch vendors with pagination (pass params as needed)
   const { data, isLoading, refetch } = useFetchVendorsPaginated();
 
   const vendorList = data?.data || [];
-
 
   // ✅ Define GenericTable columns
   const dataCell: DataCell[] = [
@@ -93,8 +92,6 @@ const VendorsPage = () => {
       <section className="table-container flex w-full flex-col rounded-[12px] bg-white/80 shadow-sm md:w-[50%]">
         <header className="mt-4 flex flex-col gap-3 px-4 md:flex-row md:items-center md:justify-between">
           <PageHeader title="Vendor Configuration" />
-
-
         </header>
 
         {/* ✅ GenericTable replaces manual table */}

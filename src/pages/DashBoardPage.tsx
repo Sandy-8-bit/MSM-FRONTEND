@@ -19,16 +19,18 @@ import { useState } from "react";
 const DashBoardPage = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
-  
+
   const {
     data: count,
     isLoading: countLoading,
     isError: countError,
   } = useFetchDashboardCounts();
-  
+
   const { role, engineer } = useAuthStore();
 
-  const { data, isLoading, isError } = useFetchServiceRequestsForEngineers(engineer?.id);
+  const { data, isLoading, isError } = useFetchServiceRequestsForEngineers(
+    engineer?.id,
+  );
 
   // Only show skeleton when both are loading initially
   if (countLoading) {
@@ -121,7 +123,7 @@ const DashBoardPage = () => {
       borderColor: "border-gray-500",
       icon: AlertTriangle,
       iconBg: "bg-gray-50",
-      navigateUrl:"",
+      navigateUrl: "",
     },
   ];
 
@@ -146,7 +148,7 @@ const DashBoardPage = () => {
                     <h4
                       className={`text-xl font-medium ${item.textColor} transition-all duration-300 ease-in-out group-hover:scale-105`}
                     >
-                      {countLoading ? "..." : item.value}
+                      {countLoading || countError ? "..." : item.value}
                     </h4>
                   </div>
                   <div
@@ -203,7 +205,7 @@ const DashBoardPage = () => {
                 </div>
 
                 <div className="flex w-full items-center justify-end gap-3">
-                  <div className="justify-end flex max-w-[350px]">
+                  <div className="flex max-w-[350px] justify-end">
                     <DateInput
                       title=""
                       value={selectedDate}
@@ -217,10 +219,12 @@ const DashBoardPage = () => {
               {/* Service request rendering with proper loading and error handling */}
               <div className="flex flex-col gap-6">
                 {isLoading ? (
-                  <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700 border border-blue-300">
+                  <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 text-sm text-blue-700">
                     Loading service requests...
                   </div>
-                ) : isError || (!data || (Array.isArray(data) && data.length === 0)) ? (
+                ) : isError ||
+                  !data ||
+                  (Array.isArray(data) && data.length === 0) ? (
                   <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-6 text-center shadow-sm">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -234,7 +238,8 @@ const DashBoardPage = () => {
                       No work today!
                     </h3>
                     <p className="text-sm text-gray-500">
-                      You don't have any assigned service requests today. Enjoy your free time 😊
+                      You don't have any assigned service requests today. Enjoy
+                      your free time 😊
                     </p>
                   </div>
                 ) : (
@@ -278,7 +283,7 @@ const DashBoardPage = () => {
                               type="button"
                               onClick={() =>
                                 navigate(
-                                  `/transactions/service-entry/create/${request.id}?mode=create`
+                                  `/transactions/service-entry/create/${request.id}?mode=create`,
                                 )
                               }
                             />
