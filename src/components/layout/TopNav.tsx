@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
 
 import NotificationCenter from "../common/NotificationCenter";
 import { useAuthStore } from "@/store/useAuthStore";
+import ProfileMenu from "../common/ProfileMenu";
 
 export const TopNav: React.FC = () => {
   const date = new Date();
@@ -17,17 +16,6 @@ export const TopNav: React.FC = () => {
   const formatted = date.toLocaleDateString("en-GB", options);
 
   const { username } = useAuthStore();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    Cookies.remove("token");          // Remove token cookie
-    localStorage.clear();             // Optional: clear other session data
-    sessionStorage.clear();           // Optional
-    window.location.reload();         // Refresh the page
-
-    // Alternative: redirect instead of reload
-    // navigate("/signin");
-  };
 
   return (
     <motion.header
@@ -67,36 +55,7 @@ export const TopNav: React.FC = () => {
           <NotificationCenter notifications={3} />
 
           {/* Profile Image */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ delay: 0.3 }}
-            className="overflow-hidden rounded-full bg-slate-100 transition-all hover:bg-slate-200"
-          >
-            <img
-              src="/images/profile.jpg"
-              alt="Profile"
-              className="h-9 w-9 rounded-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/images/default-user.png";
-              }}
-            />
-          </motion.button>
-
-          {/* Logout Button */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ delay: 0.3 }}
-            onClick={handleLogout}
-            className="rounded px-3 cursor-pointer py-1 text-sm text-red-500 bg-red-100"
-          >
-            Logout
-          </motion.button>
+          <ProfileMenu />
         </motion.div>
       </div>
     </motion.header>

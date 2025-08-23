@@ -39,7 +39,6 @@ const dataCell: DataCell[] = [
     searchable: true,
     sortable: true,
     className: "w-28 min-w-28 px-2 md:w-32 md:min-w-32",
-    
   },
   {
     headingTitle: "Brand",
@@ -117,15 +116,12 @@ const MachineEntry = () => {
     setIsImportModalOpen(true);
   };
 
-  const handleSelectionChange = useCallback(
-    (rows: any[], ids: (string | number)[]) => {
-      setSelectedIds((prev) => {
-        const next = ids as number[];
-        return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
-      });
-    },
-    [],
-  );
+  const handleSelectionChange = useCallback((ids: (string | number)[]) => {
+    setSelectedIds((prev) => {
+      const next = ids as number[];
+      return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+    });
+  }, []);
 
   const dummyMachineData: MachineDetails = {
     id: 0,

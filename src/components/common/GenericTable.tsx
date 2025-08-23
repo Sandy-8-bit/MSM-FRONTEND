@@ -116,6 +116,7 @@ export interface GenericTableProps {
     selectedIds: Array<string | number>,
   ) => void;
   getRowId?: (row: any, index: number) => string | number; // Alternative to rowKey for selection
+  children?: React.ReactNode;
 }
 
 /**
@@ -212,6 +213,7 @@ const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
       initialSelectedIds = [],
       onSelectedChange,
       getRowId,
+      children,
     },
     ref,
   ) => {
@@ -228,9 +230,6 @@ const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
       key: string | ((r: any) => any) | null;
       direction: "asc" | "desc";
     }>({ key: null, direction: "asc" });
-
-    // Width synchronization state (currently unused but kept for future enhancement)
-    const [isActionWidthSynced] = useState(false);
 
     // Reset to first page when data changes
     useEffect(() => {
@@ -636,21 +635,26 @@ const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
     // Check if any actions are available
     const hasActionButtons = onEdit || onDelete || onView;
 
+    useEffect(() => {
+      if (actionColumnBodyRefs.current.length > 0) {
+        const widths = actionColumnBodyRefs.current.map(
+          (el) => el.getBoundingClientRect().width,
+        );
+        const maxWidth = Math.max(...widths);
+
+        if (actionColumnHeaderRef.current) {
+          actionColumnHeaderRef.current.style.width = `${maxWidth}px`;
+        }
+      }
+    }, [data, onEdit, onDelete, onView]);
     /**
      * Render action column header
      */
+
     const actionColumnHeader = hasActionButtons ? (
       <div
         className="flex min-w-max flex-col items-start"
         ref={actionColumnHeaderRef}
-        style={{
-          width:
-            actionWidth !== null
-              ? `${actionWidth}px`
-              : !isActionWidthSynced
-                ? `${isMasterTable ? calculatedActionColumnWidth / 1.5 : calculatedActionColumnWidth}px`
-                : undefined,
-        }}
       >
         <p className="px-3 text-sm font-semibold text-zinc-900">Action</p>
       </div>
@@ -721,10 +725,12 @@ const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
               )}
 
               {/* Selection Status Indicator */}
+              {children}
+
               {enableSelection && selectedRowIds.size > 0 && (
-                <div className="ml-2 flex flex-row items-center gap-2 rounded-md border border-blue-500 bg-blue-500/10 px-2 py-1">
+                <div className="ml-2 flex flex-row items-center gap-2 rounded-xl border border-blue-500 bg-blue-500/10 px-3 py-2">
                   <span className="text-sm font-medium text-blue-600">
-                    Selected {selectedRowIds.size}
+                    Selected : {selectedRowIds.size}
                   </span>
                   <img
                     onClick={clearAllSelections}
@@ -755,9 +761,9 @@ const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
                   enableSelection
                     ? "w-[88px] max-w-[88px] min-w-[88px]"
                     : "w-[56px] max-w-[56px] min-w-[56px]"
-                } flex-none shrink-0 items-center justify-start gap-2 px-1.5`}
+                } flex-none shrink-0 items-center justify-start gap-2 pt-1 pl-1.5`}
               >
-                <p className="text-sm font-semibold text-zinc-900">S.No</p>
+                <p className="w-10 text-sm font-semibold text-zinc-900">S.No</p>
                 {enableSelection && (
                   <CheckboxInput
                     checked={areAllRowsSelectedOnCurrentPage}
@@ -903,7 +909,7 @@ const GenericTable = forwardRef<GenericTableRef, GenericTableProps>(
                   {/* Action Buttons Column */}
                   {hasActionButtons && (
                     <div
-                      className="flex min-w-max flex-row items-center gap-2 px-2"
+                      className="flex w-max min-w-[57px] flex-row items-center gap-2 px-2"
                       ref={(element) => {
                         if (element) actionColumnBodyRefs.current.push(element);
                       }}
