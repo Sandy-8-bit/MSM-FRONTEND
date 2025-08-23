@@ -29,18 +29,14 @@ import type {ServiceEngineerResponse} from "../../types/masterApiTypes";
  */
 
 
-export const useFetchServiceEngineers = (page: number, limit: number, engineerName?: string) => {
+export const useFetchServiceEngineers = () => {
   const fetchAllServiceEngineers = async (): Promise<ServiceEngineerResponse> => {
     try {
       const token = Cookies.get("token");
       if (!token) throw new Error("Unauthorized to perform this action.");
 
       const res = await axiosInstance.get(apiRoutes.usersSearch, {
-        params: {
-          page: page - 1,
-          limit,
-          engineerName
-        },
+
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -67,7 +63,7 @@ export const useFetchServiceEngineers = (page: number, limit: number, engineerNa
   };
 
   return useQuery({
-    queryKey: ["serviceEngineers", page, limit,engineerName],
+    queryKey: ["serviceEngineers"],
     queryFn: fetchAllServiceEngineers,
     staleTime: 10*60,
     retry: 1,

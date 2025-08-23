@@ -175,7 +175,7 @@ export const useFetchAllDetailsOptions = () => {
 };
 
 // Paginated response
-export const useFetchProductsPaginated = (page: number, limit: number , machineType?: string) => {
+export const useFetchProductsPaginated = () => {
   const fetchAllProducts = async (): Promise<ProductResponse> => {
     try {
       const token = Cookies.get("token");
@@ -183,7 +183,7 @@ export const useFetchProductsPaginated = (page: number, limit: number , machineT
 
       const res = await axiosInstance.get(apiRoutes.productsSearch, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { page: page - 1, limit, machineType},
+       
       });
 
       if (res.status !== 200) {
@@ -209,7 +209,7 @@ export const useFetchProductsPaginated = (page: number, limit: number , machineT
   };
 
   return useQuery({
-    queryKey: ["Products", page, limit,machineType],
+    queryKey: ["Products"],
     queryFn: fetchAllProducts,
     staleTime: 10*60,
     retry: 1,

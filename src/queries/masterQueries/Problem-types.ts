@@ -29,7 +29,7 @@ import type {ProblemResponse} from "../../types/masterApiTypes";
  */
 
 
-export const useFetchProblem = (page: number, limit: number,problemType?: string) => {
+export const useFetchProblem = () => {
   const fetchAllProblem = async (): Promise<ProblemResponse> => {
     try {
       const token = Cookies.get("token");
@@ -37,9 +37,7 @@ export const useFetchProblem = (page: number, limit: number,problemType?: string
 
       const res = await axiosInstance.get(apiRoutes.problemDetailsSearch, {
         params: {
-          page: page - 1,
-          limit,
-          problemType
+
         },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -67,7 +65,7 @@ export const useFetchProblem = (page: number, limit: number,problemType?: string
   };
 
   return useQuery({
-    queryKey: ["problem", page, limit,problemType],
+    queryKey: ["problem"],
     queryFn: fetchAllProblem,
     staleTime: 10*60,
     retry: 1,

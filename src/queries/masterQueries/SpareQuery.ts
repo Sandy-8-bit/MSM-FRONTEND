@@ -90,18 +90,14 @@ export const useFetchSparesOptions = () => {
   });
 };
 
-export const useFetchSparesPaginated = (page: number, limit: number , spareName?: string) => {
+export const useFetchSparesPaginated = () => {
   const fetchAllSpares = async (): Promise<SpareResponse> => {
     try {
       const token = Cookies.get("token");
       if (!token) throw new Error("Unauthorized to perform this action.");
 
       const res = await axiosInstance.get(apiRoutes.machineSparesSearch, {
-        params: {
-          page: page - 1,
-          limit,
-          spareName
-        },
+
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -126,7 +122,7 @@ export const useFetchSparesPaginated = (page: number, limit: number , spareName?
   };
 
   return useQuery({
-    queryKey: ["spares", page, limit,spareName],
+    queryKey: ["spares"],
     queryFn: fetchAllSpares,
     staleTime: 1000 * 60 * 0,
     retry: 1,

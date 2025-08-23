@@ -62,7 +62,7 @@ export const useFetchClients = () => {
 };
 
 //paginated clients
-export const useFetchClientsPaginated = (page: number, limit: number,  clientName?: string,) => {
+export const useFetchClientsPaginated = () => {
   const fetchAllClients = async (): Promise<ClientResponse> => {
     try {
       const token = Cookies.get("token");
@@ -70,9 +70,7 @@ export const useFetchClientsPaginated = (page: number, limit: number,  clientNam
 
       const res = await axiosInstance.get(apiRoutes.clientsSearch, {
         params: {
-          page: page - 1,
-          limit,
-         clientName
+
         },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -100,7 +98,7 @@ export const useFetchClientsPaginated = (page: number, limit: number,  clientNam
   };
 
   return useQuery({
-    queryKey: ["clients", page, limit,clientName],
+    queryKey: ["clients"],
     queryFn: fetchAllClients,
     staleTime: 60*10,
     retry: 1,

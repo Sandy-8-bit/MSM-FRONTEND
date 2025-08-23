@@ -3,11 +3,11 @@ export const apiRoutes = {
   signup: "/api/auth/register",
   // ------------------ Master API Routes search ------------------
   vendorsSearch: "/api/admin/vendors",
-  clientsSearch: "/api/admin/clients/search",
-  productsSearch: "/api/admin/products/search",
-  usersSearch: "/api/admin/service-engineers/search",
-  machineSparesSearch: "/api/admin/spares/search",
-  problemDetailsSearch: "/api/admin/problem-types/search",
+  clientsSearch: "/api/admin/clients",
+  productsSearch: "/api/admin/products",
+  usersSearch: "/api/admin/service-engineers",
+  machineSparesSearch: "/api/admin/spares",
+  problemDetailsSearch: "/api/admin/problem-types",
   // ------------------ Master API Routes ------------------
 
   vendors: "/api/admin/vendors",
