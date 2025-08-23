@@ -15,7 +15,7 @@ export const TransactionPage = () => {
 
   const configCards: ConfigCardtype[] = [
     {
-      img: "/icons/Master/Vendor.svg",
+      img: "/icons/Master/machine-entry.svg",
       title: "Machine Entry",
       desc: "Register and manage your external suppliers and service providers.",
       btnText: "Configure",
@@ -23,7 +23,7 @@ export const TransactionPage = () => {
         navigate(appRoutes.transactionRoutes.children.machineEntry),
     },
     {
-      img: "/icons/Master/Clients.svg",
+      img: "/icons/Master/service-request.svg",
       title: "Service Request",
       desc: "Manage and track service requests, client information, and support history efficiently.",
       btnText: "Configure",
@@ -31,7 +31,7 @@ export const TransactionPage = () => {
         navigate(appRoutes.transactionRoutes.children.serviceRequest),
     },
     {
-      img: "/icons/Master/Products.svg",
+      img: "/icons/Master/service-entry.svg",
       title: "Service Entry",
       desc: "Catalog, track, and manage your machines, products or items all in one page.",
       btnText: "Configure",

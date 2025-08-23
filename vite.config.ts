@@ -15,7 +15,7 @@ export default defineConfig({
         name: "Machine service manager",
         short_name: "MSM",
         description: "Web-app to manage and maintain machines and products",
-        theme_color: "#2b7fff",
+        theme_color: "#3B82F6",
         background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
