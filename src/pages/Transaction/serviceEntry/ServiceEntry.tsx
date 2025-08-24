@@ -26,82 +26,79 @@ const ServiceEntryPage = () => {
 
   const paginatedData = data?.data || [];
 
-  const dataCell: DataCell[] = [
-    {
-      headingTitle: "Ref No",
-      accessVar: "refNumber",
-      searchable: true,
-      sortable: true,
-      className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
-    },
-    {
-      headingTitle: "Service Date",
-      accessVar: "serviceDate",
-      searchable: true,
-      sortable: true,
-      className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
-    },
-    {
-      headingTitle: "Client",
-      accessVar: "clientName",
-      searchable: true,
-      sortable: true,
-      className: "w-32 min-w-32 px-2 md:w-40 md:min-w-40",
-    },
-    {
-      headingTitle: "Maintenance Type",
-      accessVar: "maintenanceType",
-      searchable: true,
-      sortable: true,
-      className: "w-32 min-w-32 px-2 md:w-36 md:min-w-36",
-    },
-    {
-      headingTitle: "Engineer Name",
-      accessVar: "engineerName",
-      searchable: true,
-      sortable: true,
-      className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
-    },
-    {
-      headingTitle: "Diagnostics",
-      accessVar: "engineerDiagnostics",
-      searchable: true,
-      sortable: true,
-      className: "w-30 min-w-30 px-2 md:w-37 md:min-w-37",
-    },
-    {
-      headingTitle: "Status",
-      accessVar: "serviceStatus",
-      searchable: true,
-      sortable: true,
-      className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
-      render(value, row, index) {
-        return (
-          <div
-            key={value + index}
-            className="w-24 min-w-24 px-2 md:w-28 md:min-w-28"
-          >
-            <span
-              className={`inline-flex min-w-full items-center justify-center rounded-full px-2 py-1 text-xs font-medium ${
-                row.serviceStatus === "Completed" ||
-                row.serviceStatus === "COMPLETED"
-                  ? "bg-green-100 text-green-800"
-                  : row.serviceStatus === "NOT_COMPLETED"
-                    ? "bg-red-100 text-red-800"
-                    : "bg-yellow-100 text-yellow-800"
-              }`}
-            >
-              {row.serviceStatus === "COMPLETED"
-                ? "Completed"
+const dataCell: DataCell[] = [
+  {
+    headingTitle: "Ref No",
+    accessVar: "refNumber",
+    searchable: true,
+    sortable: true,
+    className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
+  },
+  {
+    headingTitle: "Service Date",
+    accessVar: "serviceDate",
+    searchable: true,
+    sortable: true,
+    className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
+  },
+  {
+    headingTitle: "Client",
+    accessVar: "clientName",
+    searchable: true,
+    sortable: true,
+    className: "w-32 min-w-32 px-2 md:w-40 md:min-w-40",
+  },
+  {
+    headingTitle: "Maintenance Type",
+    accessVar: "maintenanceType",
+    searchable: true,
+    sortable: true,
+    className: "w-32 min-w-32 px-2 md:w-36 md:min-w-36",
+  },
+  {
+    headingTitle: "Engineer Name",
+    accessVar: "engineerName",
+    searchable: true,
+    sortable: true,
+    className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28",
+  },
+  {
+    headingTitle: "Diagnostics",
+    accessVar: "engineerDiagnostics",
+    searchable: true,
+    sortable: true,
+    className: "w-30 min-w-30 px-2 md:w-37 md:min-w-37",
+  },
+  {
+    headingTitle: "Status",
+    accessVar: "serviceStatus",
+    searchable: true,
+    sortable: true,
+    className: "w-24 min-w-24 px-2 md:w-28 md:min-w-28 text-center",
+    render(value, row) {
+      return (
+        <span
+          className={`inline-flex items-center justify-center rounded-full px-2 py-1 text-xs font-medium
+            ${
+              row.serviceStatus === "Completed" ||
+              row.serviceStatus === "COMPLETED"
+                ? "bg-green-100 text-green-800"
                 : row.serviceStatus === "NOT_COMPLETED"
-                  ? "Not Completed"
-                  : "Pending"}
-            </span>
-          </div>
-        );
-      },
+                ? "bg-red-100 text-red-800"
+                : "bg-yellow-100 text-yellow-800"
+            }`}
+        >
+          {row.serviceStatus === "COMPLETED" || row.serviceStatus === "Completed"
+            ? "Completed"
+            : row.serviceStatus === "NOT_COMPLETED"
+            ? "Not Completed"
+            : "Pending"}
+        </span>
+      );
     },
-  ];
+  },
+];
+
 
   return (
     <div className="mb-32 flex flex-col gap-4">
@@ -129,7 +126,7 @@ const ServiceEntryPage = () => {
         data={paginatedData}
         dataCell={dataCell}
         isLoading={isLoading}
-        enableSelection
+        
         onView={(row) => {
           setSelectedEntry(row);
           setIsViewFormOpen(true);

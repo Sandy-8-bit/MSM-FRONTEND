@@ -38,23 +38,25 @@ const VendorsPage = () => {
 
   const vendorList = data?.data || [];
 
-  // ✅ Define GenericTable columns
-  const dataCell: DataCell[] = [
-    {
-      headingTitle: "Name",
-      accessVar: "vendorName",
-      searchable: true,
-      sortable: true,
-      className: "min-w-[150px] max-w-[200px]",
-    },
-    {
-      headingTitle: "Contact",
-      accessVar: "contactPerson",
-      searchable: true,
-      sortable: true,
-      className: "min-w-[150px] max-w-[200px]",
-    },
-  ];
+const dataCell: DataCell[] = [
+  {
+    headingTitle: "Name",
+    accessVar: "vendorName",
+    searchable: true,
+    sortable: true,
+    className: "min-w-[250px] max-w-[250px] truncate text-left",
+  },
+  {
+    headingTitle: "Contact",
+    accessVar: "contactPerson",
+    searchable: true,
+    sortable: true,
+    className: "min-w-[180px] max-w-[180px] truncate text-left",
+  },
+];
+
+
+
 
   const handleRowClick = (item: VendorDetails) => {
     setVendor(item);
