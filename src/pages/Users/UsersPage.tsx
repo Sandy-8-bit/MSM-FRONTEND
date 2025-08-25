@@ -11,7 +11,7 @@ export const UsersPage = () => {
       title: "Create User",
       desc: "Add new users to the system and define their basic details of the user.",
       btnText: "Create",
-      onAction: () => {}, // Update this path as per your routing
+      onAction: () => {navigate(appRoutes.userRoutes.children.createUser)}, // Update this path as per your routing
     },
     {
       img: "icons/Master/assign-role.svg", // Make sure the image exists or replace it

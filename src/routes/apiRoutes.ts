@@ -34,4 +34,7 @@ export const apiRoutes = {
   sparesWise: "/api/admin/reports/spares-wise",
   // ------------------ Service engineer alone allowed Routes ------------------
   employeeServiceRequest: "/api/employee/service-request",
+
+  // ------------------ Service engineer alone allowed Routes ------------------
+  userTabel: "/api/admin/users",
 };

@@ -236,3 +236,32 @@ export const useDeleteServiceEngineer = () => {
     },
   });
 };
+
+
+//--------------GET By Id -------------//
+export const useFetchServiceEngineerById = (id: number, p0: { enabled: boolean; }) => {
+  const fetchEngineerByID = async (): Promise<ServiceEngineerDetails> => {
+    const token = Cookies.get("token");
+    if (!token) throw new Error("Unauthorized");
+
+    const res = await axiosInstance.get(`${apiRoutes.users}/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.status !== 200) {
+      throw new Error(res.data?.message || "Failed to fetch service requests");
+    }
+    return res.data.data;
+  };
+
+  return useQuery({
+    queryKey: ["fetchEngineerByID", id],
+    enabled: !!id,
+
+    queryFn: fetchEngineerByID,
+    staleTime: 0,
+    retry: 1,
+  });
+};

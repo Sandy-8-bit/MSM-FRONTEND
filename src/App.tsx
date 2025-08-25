@@ -11,6 +11,7 @@ import CustomerReport from "./pages/ReportPages/CustomerReport";
 import MachineModelReports from "./pages/ReportPages/MachineModelReports";
 import SpareReports from "./pages/ReportPages/SpareReports";
 import TechnicianReport from "./pages/ReportPages/TechnicianReport";
+import UserCreate from "./pages/Users/UserCreate";
 
 
 // 🌐 Global Pages
@@ -186,6 +187,11 @@ const App = () => {
                         <Route 
             path={appRoutes.reportRoutes.children.technicianWise}
             element={<TechnicianReport/>}
+            />
+
+            <Route 
+            path={appRoutes.userRoutes.children.createUser}
+            element={<UserCreate/>}
             />
             {/*-------------------------------- 📷 QR Scanner */}
             <Route path={appRoutes.scanPage} element={<QRScanner />} />
