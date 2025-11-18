@@ -1,19 +1,28 @@
 import { motion } from "framer-motion";
 import React from "react";
-import NotificationCenter from "../common/NotificationCenter";
-import SearchBar from "../common/SearchBar";
 
-interface TopNavProps {
-  userName?: string;
-  formattedDate?: string;
-}
-export const TopNav: React.FC<TopNavProps> = ({ userName, formattedDate }) => {
+import NotificationCenter from "../common/NotificationCenter";
+import { useAuthStore } from "@/store/useAuthStore";
+import ProfileMenu from "../common/ProfileMenu";
+
+export const TopNav: React.FC = () => {
+  const date = new Date();
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+  const formatted = date.toLocaleDateString("en-GB", options);
+
+  const { username } = useAuthStore();
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="bg-white border-b border-zinc-200 px-6 py-4 shadow-sm"
+      className="border-b border-zinc-200 bg-white px-3 py-3 shadow-sm lg:px-4"
     >
       <div className="flex items-center justify-between">
         {/* Welcome Section */}
@@ -22,9 +31,9 @@ export const TopNav: React.FC<TopNavProps> = ({ userName, formattedDate }) => {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl font-semibold text-zinc-800"
+            className="text-lg font-semibold text-zinc-800"
           >
-            Welcome, {userName}
+            Welcome, {username}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, x: -10 }}
@@ -32,42 +41,21 @@ export const TopNav: React.FC<TopNavProps> = ({ userName, formattedDate }) => {
             transition={{ delay: 0.2 }}
             className="text-sm text-zinc-500"
           >
-            {formattedDate}
+            {formatted}
           </motion.p>
         </div>
 
-        {/* Search bar */}
-        <div className="flex-1 max-w-lg mx-8">
-          <SearchBar />
-        </div>
-
-        {/* Action Buttons */}
+        {/* Right Section (Notifications & Profile) */}
         <motion.div
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center gap-5"
+          className="flex scale-90 items-center gap-5"
         >
           <NotificationCenter notifications={3} />
 
           {/* Profile Image */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-full overflow-hidden bg-slate-100 hover:bg-slate-200 transition-all"
-          >
-            <img
-              src="/images/profile.png"
-              alt="Profile"
-              className="w-10 h-10 object-cover rounded-full"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/images/default-user.png";
-              }}
-            />
-          </motion.button>
+          <ProfileMenu />
         </motion.div>
       </div>
     </motion.header>
